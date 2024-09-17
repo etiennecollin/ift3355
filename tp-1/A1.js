@@ -1,5 +1,5 @@
 // ASSIGNMENT-SPECIFIC API EXTENSION
-THREE.Object3D.prototype.setMatrix = function(a) {
+THREE.Object3D.prototype.setMatrix = function (a) {
   this.matrix = a;
   this.matrix.decompose(this.position, this.quaternion, this.scale);
 };
@@ -13,7 +13,7 @@ document.body.appendChild(renderer.domElement);
 
 // SETUP CAMERA
 var camera = new THREE.PerspectiveCamera(30, 1, 0.1, 1000); // view angle, aspect ratio, near, far
-camera.position.set(10,5,10);
+camera.position.set(10, 5, 10);
 camera.lookAt(scene.position);
 scene.add(camera);
 
@@ -28,15 +28,18 @@ function resize() {
   camera.updateProjectionMatrix();
 }
 
-window.addEventListener('resize', resize);
+window.addEventListener("resize", resize);
 resize();
 
 // FLOOR WITH CHECKERBOARD
-var floorTexture = new THREE.ImageUtils.loadTexture('images/tile.jpg');
+var floorTexture = new THREE.ImageUtils.loadTexture("images/tile.jpg");
 floorTexture.wrapS = floorTexture.wrapT = THREE.MirroredRepeatWrapping;
 floorTexture.repeat.set(4, 4);
 
-var floorMaterial = new THREE.MeshBasicMaterial({ map: floorTexture, side: THREE.DoubleSide });
+var floorMaterial = new THREE.MeshBasicMaterial({
+  map: floorTexture,
+  side: THREE.DoubleSide,
+});
 var floorGeometry = new THREE.PlaneBufferGeometry(15, 15);
 var floor = new THREE.Mesh(floorGeometry, floorMaterial);
 floor.rotation.x = Math.PI / 2;
@@ -45,18 +48,18 @@ scene.add(floor);
 
 // TRANSFORMATIONS
 
-function multMat(m1, m2){
+function multMat(m1, m2) {
   return new THREE.Matrix4().multiplyMatrices(m1, m2);
 }
 
-function inverseMat(m){
+function inverseMat(m) {
   return new THREE.Matrix4().getInverse(m, true);
 }
 
 function idMat4() {
   // Create Identity matrix
-  // TODO
   var m = new THREE.Matrix4();
+  m.set(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
   return m;
 }
 
@@ -65,35 +68,108 @@ function translateMat(matrix, x, y, z) {
   // matrix: THREE.Matrix4
   // x, y, z: float
 
-  // TODO
   var m = new THREE.Matrix4();
-  return m;
+  m.set(1, 0, 0, x, 0, 1, 0, y, 0, 0, 1, z, 0, 0, 0, 1);
+  return multMat(m, matrix);
 }
 
-function rotateMat(matrix, angle, axis){
+function rotateMat(matrix, angle, axis) {
   // Apply rotation by @angle with respect to @axis to @matrix
-  // matrix: THREE.Matrix3
+  // matrix: THREE.Matrix4
   // angle: float
   // axis: string "x", "y" or "z"
-  
-  // TODO
+
+  // Store cos and sin evaluations for better performance
+  var cos_val = Math.cos(angle);
+  var sin_val = Math.sin(angle);
+
+  var m = new THREE.Matrix4();
+  switch (axis) {
+    case "x":
+      m.set(
+        1,
+        0,
+        0,
+        0,
+        0,
+        cos_val,
+        -sin_val,
+        0,
+        0,
+        sin_val,
+        cos_val,
+        0,
+        0,
+        0,
+        0,
+        1,
+      );
+      break;
+    case "y":
+      m.set(
+        cos_val,
+        0,
+        sin_val,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -sin_val,
+        0,
+        cos_val,
+        0,
+        0,
+        0,
+        0,
+        1,
+      );
+      break;
+    case "z":
+      m.set(
+        cos_val,
+        -sin_val,
+        0,
+        0,
+        sin_val,
+        cos_val,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+      );
+      break;
+    default:
+      throw new Error("Invalid axis for rotation matrix");
+  }
+
+  return multMat(m, matrix);
 }
 
-function rotateVec3(v, angle, axis){
+function rotateVec3(v, angle, axis) {
   // Apply rotation by @angle with respect to @axis to vector @v
   // v: THREE.Vector3
   // angle: float
   // axis: string "x", "y" or "z"
-  
-  // TODO
+
+  return v.applyMatrix4(rotateMat(idMat4(), angle, axis));
 }
 
-function rescaleMat(matrix, x, y, z){
+function rescaleMat(matrix, x, y, z) {
   // Apply scaling @x, @y and @z to @matrix
   // matrix: THREE.Matrix3
   // x, y, z: float
-  
-  // TODO
+
+  var m = new THREE.Matrix4();
+  m.set(x, 0, 0, 0, 0, y, 0, 0, 0, 0, z, 0, 0, 0, 0, 1);
+
+  return multMat(m, matrix);
 }
 
 class Robot {
@@ -104,42 +180,147 @@ class Robot {
     this.headRadius = 0.32;
     // Add parameters for parts
     // TODO
+    this.armLengthMultiplier = 2.3;
+    this.armWidthMultiplier = 0.8;
+    this.armRadius = 0.2;
+    this.forearmLengthMultiplier = 1.2;
+    this.forearmRadius = 0.12;
+    this.forearmWidthMultiplier = 0.8;
 
     // Animation
-    this.walkDirection = new THREE.Vector3( 0, 0, 1 );
+    this.walkDirection = new THREE.Vector3(0, 0, 1);
 
     // Material
     this.material = new THREE.MeshNormalMaterial();
 
     // Initial pose
-    this.initialize()
+    this.initialize();
   }
 
-  initialTorsoMatrix(){
+  initialTorsoMatrix() {
     var initialTorsoMatrix = idMat4();
-    initialTorsoMatrix = translateMat(initialTorsoMatrix, 0,this.torsoHeight/2, 0);
+    initialTorsoMatrix = translateMat(
+      initialTorsoMatrix,
+      0,
+      this.torsoHeight / 2,
+      0,
+    );
 
     return initialTorsoMatrix;
   }
 
-  initialHeadMatrix(){
+  initialHeadMatrix() {
     var initialHeadMatrix = idMat4();
-    initialHeadMatrix = translateMat(initialHeadMatrix, 0, this.torsoHeight/2 + this.headRadius, 0);
+    initialHeadMatrix = translateMat(
+      initialHeadMatrix,
+      0,
+      this.torsoHeight / 2 + this.headRadius,
+      0,
+    );
 
     return initialHeadMatrix;
   }
 
+  initialArmMatrix(isLeft) {
+    var initialArmMatrix = idMat4();
+
+    // Rescale arm to be longer
+    initialArmMatrix = rescaleMat(
+      initialArmMatrix,
+      this.armWidthMultiplier,
+      this.armLengthMultiplier,
+      this.armWidthMultiplier,
+    );
+
+    var angle;
+    var position;
+    if (isLeft) {
+      angle = Math.PI / 2;
+      position = this.torsoRadius;
+    } else {
+      angle = -Math.PI / 2;
+      position = -this.torsoRadius;
+    }
+    initialArmMatrix = rotateMat(initialArmMatrix, angle, "y");
+
+    // Translate arm to the side of the torso
+    initialArmMatrix = translateMat(
+      initialArmMatrix,
+      position,
+      this.torsoHeight * 0.1,
+      0,
+    );
+
+    return initialArmMatrix;
+  }
+
+  initialForearmMatrix() {
+    var initialForearmMatrix = idMat4();
+
+    // Rescale arm to be longer
+    initialForearmMatrix = rescaleMat(
+      initialForearmMatrix,
+      this.forearmWidthMultiplier,
+      this.forearmLengthMultiplier,
+      this.forearmWidthMultiplier,
+    );
+
+    // Translate arm down from the elbow
+    var position = -(
+      this.forearmRadius * this.forearmLengthMultiplier +
+      this.armRadius * this.armLengthMultiplier
+    );
+    initialForearmMatrix = translateMat(initialForearmMatrix, 0, position, 0);
+
+    return initialForearmMatrix;
+  }
+
   initialize() {
     // Torso
-    var torsoGeometry = new THREE.CubeGeometry(2*this.torsoRadius, this.torsoHeight, this.torsoRadius, 64);
+    var torsoGeometry = new THREE.CubeGeometry(
+      2 * this.torsoRadius,
+      this.torsoHeight,
+      this.torsoRadius,
+      64,
+    );
     this.torso = new THREE.Mesh(torsoGeometry, this.material);
 
     // Head
-    var headGeometry = new THREE.CubeGeometry(2*this.headRadius, this.headRadius, this.headRadius);
+    var headGeometry = new THREE.CubeGeometry(
+      2 * this.headRadius,
+      this.headRadius,
+      this.headRadius,
+    );
     this.head = new THREE.Mesh(headGeometry, this.material);
 
-    // Add parts
+    // Left Arm
+    var armGeometry = new THREE.SphereGeometry(
+      this.armRadius,
+      32,
+      32,
+      0,
+      Math.PI,
+      0,
+      Math.PI,
+    );
+    this.leftArm = new THREE.Mesh(armGeometry, this.material);
+    this.rightArm = new THREE.Mesh(armGeometry, this.material);
+    var forearmGeometry = new THREE.SphereGeometry(
+      this.forearmRadius,
+      32,
+      32,
+      0,
+      Math.PI,
+      0,
+      Math.PI,
+    );
+    this.leftForearm = new THREE.Mesh(forearmGeometry, this.material);
+    this.rightForearm = new THREE.Mesh(forearmGeometry, this.material);
+
     // TODO
+
+    // =========================================================================
+    // =========================================================================
 
     // Torse transformation
     this.torsoInitialMatrix = this.initialTorsoMatrix();
@@ -149,48 +330,96 @@ class Robot {
     // Head transformation
     this.headInitialMatrix = this.initialHeadMatrix();
     this.headMatrix = idMat4();
-    var matrix = multMat(this.torsoInitialMatrix, this.headInitialMatrix);
-    this.head.setMatrix(matrix);
+    this.head.setMatrix(
+      multMat(this.torsoInitialMatrix, this.headInitialMatrix),
+    );
 
-    // Add transformations
+    // Arm transformations
+    this.leftArmInitialMatrix = this.initialArmMatrix(true);
+    this.rightArmInitialMatrix = this.initialArmMatrix(false);
+    this.leftArmMatrix = idMat4();
+    this.rightArmMatrix = idMat4();
+    this.leftArm.setMatrix(
+      multMat(this.torsoInitialMatrix, this.leftArmInitialMatrix),
+    );
+    this.rightArm.setMatrix(
+      multMat(this.torsoInitialMatrix, this.rightArmInitialMatrix),
+    );
+
+    // Forearms transformations
+    this.leftForearmInitialMatrix = this.initialForearmMatrix();
+    this.rightForearmInitialMatrix = this.initialForearmMatrix();
+    this.leftForearmMatrix = idMat4();
+    var tmp;
+    tmp = multMat(this.torsoInitialMatrix, this.leftForearmInitialMatrix);
+    this.leftForearm.setMatrix(multMat(this.leftArmInitialMatrix, tmp));
+
+    this.rightForearmMatrix = idMat4();
+    tmp = multMat(this.torsoInitialMatrix, this.rightForearmInitialMatrix);
+    this.rightForearm.setMatrix(multMat(this.rightArmInitialMatrix, tmp));
     // TODO
+    //
+    // =========================================================================
+    // =========================================================================
 
-	// Add robot to scene
-	scene.add(this.torso);
+    // Add robot to scene
+    scene.add(this.torso);
     scene.add(this.head);
-    // Add parts
+    scene.add(this.leftArm);
+    scene.add(this.rightArm);
+    scene.add(this.leftForearm);
+    scene.add(this.rightForearm);
     // TODO
   }
 
-  rotateTorso(angle){
+  updateTorsoHierarchy() {
+    var torsoFinalMatrix = multMat(this.torsoMatrix, this.torsoInitialMatrix);
+    this.torso.setMatrix(torsoFinalMatrix);
+
+    var headMultMatrix = multMat(this.headMatrix, this.headInitialMatrix);
+    var headFinalMatrix = multMat(torsoFinalMatrix, headMultMatrix);
+    this.head.setMatrix(headFinalMatrix);
+
+    // Left arm
+    var leftArmMultMatrix = multMat(
+      this.leftArmMatrix,
+      this.leftArmInitialMatrix,
+    );
+    var leftArmFinalMatrix = multMat(torsoFinalMatrix, leftArmMultMatrix);
+    this.leftArm.setMatrix(leftArmFinalMatrix);
+
+    // Right arm
+    var rightArmMultMatrix = multMat(
+      this.rightArmMatrix,
+      this.rightArmInitialMatrix,
+    );
+    var rightArmFinalMatrix = multMat(torsoFinalMatrix, rightArmMultMatrix);
+    this.rightArm.setMatrix(rightArmFinalMatrix);
+  }
+
+  rotateTorso(angle) {
     var torsoMatrix = this.torsoMatrix;
 
     this.torsoMatrix = idMat4();
     this.torsoMatrix = rotateMat(this.torsoMatrix, angle, "y");
     this.torsoMatrix = multMat(torsoMatrix, this.torsoMatrix);
 
-    var matrix = multMat(this.torsoMatrix, this.torsoInitialMatrix);
-    this.torso.setMatrix(matrix);
-
-    var matrix2 = multMat(this.headMatrix, this.headInitialMatrix);
-    matrix = multMat(matrix, matrix2);
-    this.head.setMatrix(matrix);
+    this.updateTorsoHierarchy();
 
     this.walkDirection = rotateVec3(this.walkDirection, angle, "y");
   }
 
-  moveTorso(speed){
-    this.torsoMatrix = translateMat(this.torsoMatrix, speed * this.walkDirection.x, speed * this.walkDirection.y, speed * this.walkDirection.z);
-
-    var matrix = multMat(this.torsoMatrix, this.torsoInitialMatrix);
-    this.torso.setMatrix(matrix);
-
-    var matrix2 = multMat(this.headMatrix, this.headInitialMatrix);
-    matrix = multMat(matrix, matrix2);
-    this.head.setMatrix(matrix);
+  moveTorso(speed) {
+    this.torsoMatrix = translateMat(
+      this.torsoMatrix,
+      speed * this.walkDirection.x,
+      speed * this.walkDirection.y,
+      speed * this.walkDirection.z,
+    );
+    this.updateTorsoHierarchy();
   }
 
-  rotateHead(angle){
+  rotateHead(angle) {
     var headMatrix = this.headMatrix;
 
     this.headMatrix = idMat4();
@@ -206,9 +435,9 @@ class Robot {
   // Add methods for other parts
   // TODO
 
-  look_at(point){
+  look_at(point) {
     // Compute and apply the correct rotation of the head and the torso for the robot to look at @point
-      //TODO
+    //TODO
   }
 }
 
@@ -223,6 +452,18 @@ var components = [
   "Head",
   // Add parts names
   // TODO
+  "Left Arm",
+  "Left Forearm",
+  "Left Leg",
+  "Left Thigh",
+
+  "Right Arm",
+  "Right Forearm",
+  "Right Leg",
+  "Right Thigh",
+
+  "Left Eye",
+  "Right Eye",
 ];
 var numberComponents = components.length;
 
@@ -231,20 +472,20 @@ var raycaster = new THREE.Raycaster();
 var mouse = new THREE.Vector2();
 var sphere = null;
 
-document.addEventListener('mousemove', onMouseMove, false);
+document.addEventListener("mousemove", onMouseMove, false);
 
 var isRightButtonDown = false;
 
 function checkKeyboard() {
   // Next element
-  if (keyboard.pressed("e")){
+  if (keyboard.pressed("e")) {
     selectedRobotComponent = selectedRobotComponent + 1;
 
-    if (selectedRobotComponent<0){
+    if (selectedRobotComponent < 0) {
       selectedRobotComponent = numberComponents - 1;
     }
 
-    if (selectedRobotComponent >= numberComponents){
+    if (selectedRobotComponent >= numberComponents) {
       selectedRobotComponent = 0;
     }
 
@@ -252,14 +493,14 @@ function checkKeyboard() {
   }
 
   // Previous element
-  if (keyboard.pressed("q")){
+  if (keyboard.pressed("q")) {
     selectedRobotComponent = selectedRobotComponent - 1;
 
-    if (selectedRobotComponent < 0){
+    if (selectedRobotComponent < 0) {
       selectedRobotComponent = numberComponents - 1;
     }
 
-    if (selectedRobotComponent >= numberComponents){
+    if (selectedRobotComponent >= numberComponents) {
       selectedRobotComponent = 0;
     }
 
@@ -267,8 +508,8 @@ function checkKeyboard() {
   }
 
   // UP
-  if (keyboard.pressed("w")){
-    switch (components[selectedRobotComponent]){
+  if (keyboard.pressed("w")) {
+    switch (components[selectedRobotComponent]) {
       case "Torso":
         robot.moveTorso(0.1);
         break;
@@ -280,8 +521,8 @@ function checkKeyboard() {
   }
 
   // DOWN
-  if (keyboard.pressed("s")){
-    switch (components[selectedRobotComponent]){
+  if (keyboard.pressed("s")) {
+    switch (components[selectedRobotComponent]) {
       case "Torso":
         robot.moveTorso(-0.1);
         break;
@@ -293,8 +534,8 @@ function checkKeyboard() {
   }
 
   // LEFT
-  if (keyboard.pressed("a")){
-    switch (components[selectedRobotComponent]){
+  if (keyboard.pressed("a")) {
+    switch (components[selectedRobotComponent]) {
       case "Torso":
         robot.rotateTorso(0.1);
         break;
@@ -307,8 +548,8 @@ function checkKeyboard() {
   }
 
   // RIGHT
-  if (keyboard.pressed("d")){
-    switch (components[selectedRobotComponent]){
+  if (keyboard.pressed("d")) {
+    switch (components[selectedRobotComponent]) {
       case "Torso":
         robot.rotateTorso(-0.1);
         break;
@@ -318,55 +559,11 @@ function checkKeyboard() {
       // Add more cases
       // TODO
     }
-    }
+  }
 
-    if (keyboard.pressed("f")) {
-        isRightButtonDown = true;
+  if (keyboard.pressed("f")) {
+    isRightButtonDown = true;
 
-        var vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
-
-        vector.unproject(camera);
-
-        var dir = vector.sub(camera.position).normalize();
-
-        raycaster.ray.origin.copy(camera.position);
-        raycaster.ray.direction.copy(dir);
-
-        var intersects = raycaster.intersectObjects(scene.children, true);
-
-        if (intersects.length > 0) {
-            if (!sphere) {
-                var geometry = new THREE.SphereGeometry(0.1, 32, 32);
-                var material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-                sphere = new THREE.Mesh(geometry, material);
-                scene.add(sphere);
-            }
-        }
-
-        updateLookAtPosition();
-    }
-    else{
-        isRightButtonDown = false;
-
-        if (sphere) {
-            scene.remove(sphere);
-            sphere.geometry.dispose();
-            sphere.material.dispose();
-            sphere = null;
-        }
-    }
-}
-
-function onMouseMove(event) {
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
-
-    if (isRightButtonDown) {
-        updateLookAtPosition();
-    }
-}
-
-function updateLookAtPosition() {
     var vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
 
     vector.unproject(camera);
@@ -376,13 +573,59 @@ function updateLookAtPosition() {
     raycaster.ray.origin.copy(camera.position);
     raycaster.ray.direction.copy(dir);
 
-    var intersects = raycaster.intersectObjects(scene.children.filter(obj => obj !== sphere), true);
+    var intersects = raycaster.intersectObjects(scene.children, true);
 
     if (intersects.length > 0) {
-        var intersect = intersects[0]
-        sphere.position.copy(intersect.point);
-        robot.look_at(intersect.point);
+      if (!sphere) {
+        var geometry = new THREE.SphereGeometry(0.1, 32, 32);
+        var material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        sphere = new THREE.Mesh(geometry, material);
+        scene.add(sphere);
+      }
     }
+
+    updateLookAtPosition();
+  } else {
+    isRightButtonDown = false;
+
+    if (sphere) {
+      scene.remove(sphere);
+      sphere.geometry.dispose();
+      sphere.material.dispose();
+      sphere = null;
+    }
+  }
+}
+
+function onMouseMove(event) {
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  if (isRightButtonDown) {
+    updateLookAtPosition();
+  }
+}
+
+function updateLookAtPosition() {
+  var vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+
+  vector.unproject(camera);
+
+  var dir = vector.sub(camera.position).normalize();
+
+  raycaster.ray.origin.copy(camera.position);
+  raycaster.ray.direction.copy(dir);
+
+  var intersects = raycaster.intersectObjects(
+    scene.children.filter((obj) => obj !== sphere),
+    true,
+  );
+
+  if (intersects.length > 0) {
+    var intersect = intersects[0];
+    sphere.position.copy(intersect.point);
+    robot.look_at(intersect.point);
+  }
 }
 
 // SETUP UPDATE CALL-BACK
