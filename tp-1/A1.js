@@ -432,6 +432,27 @@ class Robot {
     this.head.setMatrix(matrix);
   }
 
+  rotateLeftArm(angle, axis){
+    var leftArmMatrix = this.leftArmMatrix;
+
+    this.leftArmMatrix = idMat4();
+    this.leftArmMatrix = rotateMat(this.leftArmMatrix,angle, axis)
+    this.leftArmMatrix = multMat(leftArmMatrix, this.leftArmMatrix)
+    
+    this.updateTorsoHierarchy();
+  }
+
+  rotateRightArm(angle, axis){
+    var leftArmMatrix = this.leftArmMatrix;
+
+    this.leftArmMatrix = idMat4();
+    this.leftArmMatrix = rotateMat(this.leftArmMatrix,angle, axis)
+    this.leftArmMatrix = multMat(leftArmMatrix, this.leftArmMatrix)
+    
+    this.updateTorsoHierarchy();
+  }
+
+
   // Add methods for other parts
   // TODO
 
@@ -515,6 +536,10 @@ function checkKeyboard() {
         break;
       case "Head":
         break;
+      case "Left Arm":
+        robot.rotateLeftArm(0.1, "x")
+      case "Right Arm":
+        robot.rotateRightArm(0.1,"x")
       // Add more cases
       // TODO
     }
@@ -528,6 +553,10 @@ function checkKeyboard() {
         break;
       case "Head":
         break;
+      case "Left Arm":
+        robot.rotateLeftArm(-0.1, "x")
+      case "Right Arm":
+        robot.rotateRightArm(-0.1,"x")
       // Add more cases
       // TODO
     }
@@ -542,6 +571,9 @@ function checkKeyboard() {
       case "Head":
         robot.rotateHead(0.1);
         break;
+      case "Left Arm":
+        robot.rotateLeftArm(0.1,"z")
+        break
       // Add more cases
       // TODO
     }
@@ -556,6 +588,9 @@ function checkKeyboard() {
       case "Head":
         robot.rotateHead(-0.1);
         break;
+      case "Left Arm":
+        robot.rotateLeftArm(-0.1,"z")
+        break
       // Add more cases
       // TODO
     }
