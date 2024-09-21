@@ -470,8 +470,23 @@ class Robot {
   rotateLeftArm(angle, axis) {
     var leftArmMatrix = this.leftArmMatrix;
 
+    
+
     this.leftArmMatrix = idMat4();
+    if(axis=="z"){
+      this.leftArmMatrix = translateMat(this.leftArmMatrix, -this.torsoRadius, -0.61,0)
+    }
+    if(axis=="x"){
+      this.leftArmMatrix = translateMat(this.leftArmMatrix, -this.torsoRadius, -0.61,0)
+    }
     this.leftArmMatrix = rotateMat(this.leftArmMatrix, angle, axis);
+    if(axis=="z"){
+      this.leftArmMatrix = translateMat(this.leftArmMatrix, this.torsoRadius, 0.61,0)
+    }
+    if(axis=="x"){
+      this.leftArmMatrix = translateMat(this.leftArmMatrix, this.torsoRadius, 0.61,0)
+    }
+    console.log(this.leftArmMatrix)
     this.leftArmMatrix = multMat(leftArmMatrix, this.leftArmMatrix);
 
     this.updateArm(true);
