@@ -470,66 +470,87 @@ class Robot {
   rotateLeftArm(angle, axis) {
     var leftArmMatrix = this.leftArmMatrix;
 
-    
-
     this.leftArmMatrix = idMat4();
-    if(axis=="z"){
-      this.leftArmMatrix = translateMat(this.leftArmMatrix, -this.torsoRadius, -0.61,0)
+    if (axis == "z") {
+      this.leftArmMatrix = translateMat(
+        this.leftArmMatrix,
+        -this.torsoRadius,
+        -0.61,
+        0,
+      );
     }
-    if(axis=="x"){
-      this.leftArmMatrix = translateMat(this.leftArmMatrix, 0, -0.61,0)
+    if (axis == "x") {
+      this.leftArmMatrix = translateMat(this.leftArmMatrix, 0, -0.61, 0);
     }
     this.leftArmMatrix = rotateMat(this.leftArmMatrix, angle, axis);
-    if(axis=="z"){
-      this.leftArmMatrix = translateMat(this.leftArmMatrix, this.torsoRadius, 0.61,0)
+    if (axis == "z") {
+      this.leftArmMatrix = translateMat(
+        this.leftArmMatrix,
+        this.torsoRadius,
+        0.61,
+        0,
+      );
     }
-    if(axis=="x"){
-      this.leftArmMatrix = translateMat(this.leftArmMatrix, 0, 0.61,0)
+    if (axis == "x") {
+      this.leftArmMatrix = translateMat(this.leftArmMatrix, 0, 0.61, 0);
     }
-    console.log(this.leftArmMatrix)
+    console.log(this.leftArmMatrix);
     this.leftArmMatrix = multMat(leftArmMatrix, this.leftArmMatrix);
 
     this.updateArm(true);
   }
 
-  rotateLeftForeArm(angle){
-    var leftForearmMatrix = this.leftForearmMatrix
+  rotateLeftForeArm(angle) {
+    var leftForearmMatrix = this.leftForearmMatrix;
 
-    this.leftForearmMatrix = idMat4()
-    this.leftForearmMatrix = rotateMat(this.leftForearmMatrix, angle, "z")
-    this.leftForearmMatrix = multMat(leftForearmMatrix, this.leftForearmMatrix)
-    this.updateForearm(true)
+    this.leftForearmMatrix = idMat4();
+    this.leftForearmMatrix = rotateMat(this.leftForearmMatrix, angle, "z");
+    this.leftForearmMatrix = multMat(leftForearmMatrix, this.leftForearmMatrix);
+    this.updateForearm(true);
   }
 
   rotateRightArm(angle, axis) {
     var leftArmMatrix = this.leftArmMatrix;
 
     this.leftArmMatrix = idMat4();
-    if(axis=="z"){
-      this.leftArmMatrix = translateMat(this.leftArmMatrix, -this.torsoRadius, -0.61,0)
+    if (axis == "z") {
+      this.leftArmMatrix = translateMat(
+        this.leftArmMatrix,
+        -this.torsoRadius,
+        -0.61,
+        0,
+      );
     }
-    if(axis=="x"){
-      this.leftArmMatrix = translateMat(this.leftArmMatrix, 0, -0.61,0)
+    if (axis == "x") {
+      this.leftArmMatrix = translateMat(this.leftArmMatrix, 0, -0.61, 0);
     }
     this.leftArmMatrix = rotateMat(this.leftArmMatrix, angle, axis);
-    if(axis=="z"){
-      this.leftArmMatrix = translateMat(this.leftArmMatrix, this.torsoRadius, 0.61,0)
+    if (axis == "z") {
+      this.leftArmMatrix = translateMat(
+        this.leftArmMatrix,
+        this.torsoRadius,
+        0.61,
+        0,
+      );
     }
-    if(axis=="x"){
-      this.leftArmMatrix = translateMat(this.leftArmMatrix, 0, 0.61,0)
+    if (axis == "x") {
+      this.leftArmMatrix = translateMat(this.leftArmMatrix, 0, 0.61, 0);
     }
     this.leftArmMatrix = multMat(leftArmMatrix, this.leftArmMatrix);
 
     this.updateArm(false);
   }
 
-  rotateRightForeArm(angle){
-    var rightForearmMatrix = this.rightForearmMatrix
+  rotateRightForeArm(angle) {
+    var rightForearmMatrix = this.rightForearmMatrix;
 
-    this.rightForearmMatrix = idMat4()
-    this.rightForearmMatrix = rotateMat(this.rightForearmMatrix, angle, "z")
-    this.rightForearmMatrix = multMat(rightForearmMatrix, this.rightForearmMatrix)
-    this.updateForearm()
+    this.rightForearmMatrix = idMat4();
+    this.rightForearmMatrix = rotateMat(this.rightForearmMatrix, angle, "z");
+    this.rightForearmMatrix = multMat(
+      rightForearmMatrix,
+      this.rightForearmMatrix,
+    );
+    this.updateForearm();
   }
 
   // Add methods for other parts
@@ -617,13 +638,13 @@ function checkKeyboard() {
         break;
       case "Left Arm":
         robot.rotateLeftArm(0.1, "x");
-        break
+        break;
       case "Right Arm":
         robot.rotateRightArm(0.1, "x");
-        break
+        break;
       case "Left Forearm":
-        robot.rotateLeftForeArm(0.1)
-        break
+        robot.rotateLeftForeArm(0.1);
+        break;
       // Add more cases
       // TODO
     }
@@ -644,8 +665,8 @@ function checkKeyboard() {
         robot.rotateRightArm(-0.1, "x");
         break;
       case "Left Forearm":
-        robot.rotateLeftForeArm(-0.1)
-        break
+        robot.rotateLeftForeArm(-0.1);
+        break;
       // Add more cases
       // TODO
     }
