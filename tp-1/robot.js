@@ -9,9 +9,9 @@ class Robot {
     this.armLengthMultiplier = 2.3;
     this.armWidthMultiplier = 0.8;
     this.armRadius = 0.2;
-    this.forearmLengthMultiplier = 1.2;
+    this.forearmLengthMultiplier = 2.75;
     this.forearmRadius = 0.12;
-    this.forearmWidthMultiplier = 0.8;
+    this.forearmWidthMultiplier = 0.64;
 
     // Animation
     this.walkDirection = new THREE.Vector3(0, 0, 1);
@@ -58,6 +58,14 @@ class Robot {
       this.armWidthMultiplier,
     );
 
+    // Store the inverse of the scaling matrix
+    this.inverseArmScaling = rescaleMat(
+      idMat4(),
+      1 / this.armWidthMultiplier,
+      1 / this.armLengthMultiplier,
+      1 / this.armWidthMultiplier,
+    );
+
     var translationX;
     if (isLeft) {
       translationX =
@@ -93,7 +101,8 @@ class Robot {
 
     // Translate arm down from the elbow
     var translationY =
-      this.forearmRadius * this.forearmLengthMultiplier + this.armRadius;
+      this.forearmRadius * this.forearmLengthMultiplier +
+      this.armRadius * this.armLengthMultiplier;
 
     initialForearmMatrix = translateMat(
       initialForearmMatrix,
@@ -162,13 +171,18 @@ class Robot {
     this.leftForearmInitialMatrix = this.initialForearmMatrix();
     this.rightForearmInitialMatrix = this.initialForearmMatrix();
     this.leftForearmMatrix = idMat4();
-    this.leftForearm.setMatrix(
-      multMat(this.leftArm.matrix, this.leftForearmInitialMatrix),
-    );
-
     this.rightForearmMatrix = idMat4();
+    this.leftForearm.setMatrix(
+      multMat(
+        multMat(this.leftArm.matrix, this.inverseArmScaling),
+        this.leftForearmInitialMatrix,
+      ),
+    );
     this.rightForearm.setMatrix(
-      multMat(this.rightArm.matrix, this.rightForearmInitialMatrix),
+      multMat(
+        multMat(this.rightArm.matrix, this.inverseArmScaling),
+        this.rightForearmInitialMatrix,
+      ),
     );
     // TODO
     //
@@ -222,27 +236,17 @@ class Robot {
   }
 
   updateForearm(isLeft) {
-    // FIXME: The issue with the forearm rotation is that once rotated by the first matrix multiplication (relative line 2 down), the forearm is multiplied with the left arm matrix (relative line 6 down). That matrix applies a y-scaling that is part of the initial arm matrix. Because the scaling is vertical, then the forearm changes length depending on its angle.
+    var matrix, parentMatrix;
     if (isLeft) {
-      var leftForearmMultMatrix = multMat(
-        this.leftForearmMatrix,
-        this.leftForearmInitialMatrix,
-      );
-      var leftForearmFinalMatrix = multMat(
-        this.leftArm.matrix,
-        leftForearmMultMatrix,
-      );
-      this.leftForearm.setMatrix(leftForearmFinalMatrix);
+      matrix = multMat(this.leftForearmMatrix, this.leftForearmInitialMatrix);
+      parentMatrix = multMat(this.leftArm.matrix, this.inverseArmScaling);
+      matrix = multMat(parentMatrix, matrix);
+      this.leftForearm.setMatrix(matrix);
     } else {
-      var rightForearmMultMatrix = multMat(
-        this.rightForearmMatrix,
-        this.rightForearmInitialMatrix,
-      );
-      var rightForearmFinalMatrix = multMat(
-        this.rightArm.matrix,
-        rightForearmMultMatrix,
-      );
-      this.rightForearm.setMatrix(rightForearmFinalMatrix);
+      matrix = multMat(this.rightForearmMatrix, this.rightForearmInitialMatrix);
+      parentMatrix = multMat(this.rightArm.matrix, this.inverseArmScaling);
+      matrix = multMat(parentMatrix, matrix);
+      this.rightForearm.setMatrix(matrix);
     }
   }
 
@@ -307,7 +311,7 @@ class Robot {
   }
 
   rotateForearm(angle, isLeft) {
-    var translationY = this.armRadius; // this.forearmRadius * this.forearmLengthMultiplier is cancelled in the equation
+    var translationY = this.armRadius * this.armLengthMultiplier; // this.forearmRadius * this.forearmLengthMultiplier is cancelled in the equation
 
     var forearmMatrix;
     if (isLeft) {
