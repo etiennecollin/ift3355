@@ -1,29 +1,53 @@
 class Robot {
   constructor() {
-    // Geometry
+    // Torso
     this.torsoHeight = 1.5;
     this.torsoRadius = 0.75;
+    this.torsoTranslationX = 0;
+    this.torsoTranslationY = this.torsoHeight / 2;
+
+    // Head
     this.headRadius = 0.32;
+    this.headTranslationX = 0;
+    this.headTranslationY = this.torsoTranslationY + this.headRadius;
 
     // Arms
     this.armLengthMultiplier = 2.3;
     this.armWidthMultiplier = 0.8;
     this.armRadius = 0.2;
+    this.armTranslationX =
+      this.torsoRadius + this.armRadius * this.armWidthMultiplier;
+    this.armTranslationY = this.torsoHeight * 0.1;
 
     // Forearms
     this.forearmLengthMultiplier = 2.75;
     this.forearmRadius = 0.12;
     this.forearmWidthMultiplier = 0.64;
+    this.forearmTranslationX = 0;
+    this.forearmTranslationY = -(
+      this.forearmRadius * this.forearmLengthMultiplier +
+      this.armRadius * this.armLengthMultiplier
+    );
 
     // Thighs
     this.thighWidthMultiplier = 1;
     this.thighLengthMultiplier = 2;
     this.thighRadius = 0.2;
+    this.thighTranslationX = (2 / 3) * this.torsoRadius;
+    this.thighTranslationY = -(
+      this.torsoTranslationY +
+      this.thighRadius * this.thighLengthMultiplier
+    );
 
     // Legs
     this.legWidthMultiplier = 0.8;
     this.legLengthMultiplier = 2.5;
     this.legRadius = 0.15;
+    this.legTranslationX = 0;
+    this.legTranslationY = -(
+      this.legRadius * this.legLengthMultiplier +
+      this.thighRadius * this.thighLengthMultiplier
+    );
 
     // TODO
 
@@ -41,8 +65,8 @@ class Robot {
     var initialTorsoMatrix = idMat4();
     initialTorsoMatrix = translateMat(
       initialTorsoMatrix,
-      0,
-      this.torsoHeight / 2,
+      this.torsoTranslationX,
+      this.torsoTranslationY,
       0,
     );
 
@@ -53,8 +77,8 @@ class Robot {
     var initialHeadMatrix = idMat4();
     initialHeadMatrix = translateMat(
       initialHeadMatrix,
-      0,
-      this.torsoHeight / 2 + this.headRadius,
+      this.headTranslationX,
+      this.headTranslationY,
       0,
     );
 
@@ -80,17 +104,11 @@ class Robot {
       1 / this.armWidthMultiplier,
     );
 
-    var translationX =
-      this.torsoRadius + this.armRadius * this.armWidthMultiplier;
-    if (!isLeft) {
-      translationX = -translationX;
-    }
-
     // Translate arm to the side of the torso
     initialArmMatrix = translateMat(
       initialArmMatrix,
-      translationX,
-      this.torsoHeight * 0.1,
+      isLeft ? this.armTranslationX : -this.armTranslationX,
+      this.armTranslationY,
       0,
     );
 
@@ -109,14 +127,10 @@ class Robot {
     );
 
     // Translate arm down from the elbow
-    var translationY =
-      this.forearmRadius * this.forearmLengthMultiplier +
-      this.armRadius * this.armLengthMultiplier;
-
     initialForearmMatrix = translateMat(
       initialForearmMatrix,
-      0,
-      -translationY,
+      this.forearmTranslationX,
+      this.forearmTranslationY,
       0,
     );
 
@@ -142,16 +156,11 @@ class Robot {
       1 / this.thighWidthMultiplier,
     );
 
-    var translationX = (2 / 3) * this.torsoRadius;
-    if (!isLeft) {
-      translationX = -translationX;
-    }
-
     // Translate thigh to the side of the torso
     initialThighMatrix = translateMat(
       initialThighMatrix,
-      translationX,
-      -(this.torsoHeight / 2 + this.thighRadius * this.thighLengthMultiplier),
+      isLeft ? this.thighTranslationX : -this.thighTranslationX,
+      this.thighTranslationY,
       0,
     );
 
@@ -170,11 +179,12 @@ class Robot {
     );
 
     // Translate leg down from the thigh
-    var translationY =
-      this.legRadius * this.legLengthMultiplier +
-      this.thighRadius * this.thighLengthMultiplier;
-
-    initialLegMatrix = translateMat(initialLegMatrix, 0, -translationY, 0);
+    initialLegMatrix = translateMat(
+      initialLegMatrix,
+      this.legTranslationX,
+      this.legTranslationY,
+      0,
+    );
 
     return initialLegMatrix;
   }
@@ -421,18 +431,10 @@ class Robot {
   }
 
   rotateArm(angle, axis, isLeft) {
-    var translationX =
-      this.torsoRadius + this.armRadius * this.armWidthMultiplier;
+    var translationX = isLeft ? this.armTranslationX : -this.armTranslationX;
     var translationY =
-      this.torsoHeight * 0.1 + this.armRadius * this.armLengthMultiplier;
-
-    var armMatrix;
-    if (isLeft) {
-      armMatrix = this.leftArmMatrix;
-    } else {
-      armMatrix = this.rightArmMatrix;
-      translationX = -translationX;
-    }
+      this.armTranslationY + this.armRadius * this.armLengthMultiplier;
+    var armMatrix = isLeft ? this.leftArmMatrix : this.rightArmMatrix;
 
     var newArmMatrix = idMat4();
     newArmMatrix = translateMat(newArmMatrix, -translationX, -translationY, 0);
@@ -449,19 +451,30 @@ class Robot {
   }
 
   rotateForearm(angle, isLeft) {
-    var translationY = -(this.armRadius * this.armLengthMultiplier); // this.forearmRadius * this.forearmLengthMultiplier is cancelled in the equation
-
-    var forearmMatrix;
-    if (isLeft) {
-      forearmMatrix = this.leftForearmMatrix;
-    } else {
-      forearmMatrix = this.rightForearmMatrix;
-    }
+    var translationX = isLeft
+      ? this.forearmTranslationX
+      : -this.forearmTranslationX;
+    var translationY =
+      this.forearmTranslationY +
+      this.forearmRadius * this.forearmLengthMultiplier;
+    var forearmMatrix = isLeft
+      ? this.leftForearmMatrix
+      : this.rightForearmMatrix;
 
     var newForearmMatrix = idMat4();
-    newForearmMatrix = translateMat(newForearmMatrix, 0, -translationY, 0);
+    newForearmMatrix = translateMat(
+      newForearmMatrix,
+      -translationX,
+      -translationY,
+      0,
+    );
     newForearmMatrix = rotateMat(newForearmMatrix, angle, "x");
-    newForearmMatrix = translateMat(newForearmMatrix, 0, translationY, 0);
+    newForearmMatrix = translateMat(
+      newForearmMatrix,
+      translationX,
+      translationY,
+      0,
+    );
 
     if (isLeft) {
       this.leftForearmMatrix = multMat(forearmMatrix, newForearmMatrix);
@@ -473,16 +486,12 @@ class Robot {
   }
 
   rotateThigh(angle, isLeft) {
-    var translationX = (2 / 3) * this.torsoRadius;
-    var translationY = -(this.thighRadius * this.thighLengthMultiplier); // this.torsoHeight / 2 is cancelled from the equation
-
-    var thighMatrix;
-    if (isLeft) {
-      thighMatrix = this.leftThighMatrix;
-    } else {
-      thighMatrix = this.rightThighMatrix;
-      translationX = -translationX;
-    }
+    var translationX = isLeft
+      ? this.thighTranslationX
+      : -this.thighTranslationX;
+    var translationY =
+      this.thighTranslationY + this.thighRadius * this.thighLengthMultiplier;
+    var thighMatrix = isLeft ? this.leftThighMatrix : this.rightThighMatrix;
 
     var newThighMatrix = idMat4();
     newThighMatrix = translateMat(
@@ -509,19 +518,15 @@ class Robot {
   }
 
   rotateLeg(angle, isLeft) {
-    var translationY = -(this.thighRadius * this.thighLengthMultiplier); // this.legRadius * this.legLengthMultiplier is cancelled in the equation
-
-    var legMatrix;
-    if (isLeft) {
-      legMatrix = this.leftLegMatrix;
-    } else {
-      legMatrix = this.rightLegMatrix;
-    }
+    var translationX = isLeft ? this.legTranslationX : -this.legTranslationX;
+    var translationY =
+      this.legTranslationY + this.legRadius * this.legLengthMultiplier;
+    var legMatrix = isLeft ? this.leftLegMatrix : this.rightLegMatrix;
 
     var newLegMatrix = idMat4();
-    newLegMatrix = translateMat(newLegMatrix, 0, -translationY, 0);
+    newLegMatrix = translateMat(newLegMatrix, -translationX, -translationY, 0);
     newLegMatrix = rotateMat(newLegMatrix, angle, "x");
-    newLegMatrix = translateMat(newLegMatrix, 0, translationY, 0);
+    newLegMatrix = translateMat(newLegMatrix, translationX, translationY, 0);
 
     if (isLeft) {
       this.leftLegMatrix = multMat(legMatrix, newLegMatrix);
