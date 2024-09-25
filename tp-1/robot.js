@@ -4,14 +4,28 @@ class Robot {
     this.torsoHeight = 1.5;
     this.torsoRadius = 0.75;
     this.headRadius = 0.32;
-    // Add parameters for parts
-    // TODO
+
+    // Arms
     this.armLengthMultiplier = 2.3;
     this.armWidthMultiplier = 0.8;
     this.armRadius = 0.2;
+
+    // Forearms
     this.forearmLengthMultiplier = 2.75;
     this.forearmRadius = 0.12;
     this.forearmWidthMultiplier = 0.64;
+
+    // Thighs
+    this.thighWidthMultiplier = 1;
+    this.thighLengthMultiplier = 2;
+    this.thighRadius = 0.2;
+
+    // Legs
+    this.legWidthMultiplier = 0.8;
+    this.legLengthMultiplier = 2.5;
+    this.legRadius = 0.15;
+
+    // TODO
 
     // Animation
     this.walkDirection = new THREE.Vector3(0, 0, 1);
@@ -66,15 +80,10 @@ class Robot {
       1 / this.armWidthMultiplier,
     );
 
-    var translationX;
-    if (isLeft) {
-      translationX =
-        this.torsoRadius + this.armRadius * this.armWidthMultiplier;
-    } else {
-      translationX = -(
-        this.torsoRadius +
-        this.armRadius * this.armWidthMultiplier
-      );
+    var translationX =
+      this.torsoRadius + this.armRadius * this.armWidthMultiplier;
+    if (!isLeft) {
+      translationX = -translationX;
     }
 
     // Translate arm to the side of the torso
@@ -114,6 +123,62 @@ class Robot {
     return initialForearmMatrix;
   }
 
+  initialThighMatrix(isLeft) {
+    var initialThighMatrix = idMat4();
+
+    // Rescale thigh to be longer
+    initialThighMatrix = rescaleMat(
+      initialThighMatrix,
+      this.thighWidthMultiplier,
+      this.thighLengthMultiplier,
+      this.thighWidthMultiplier,
+    );
+
+    // Store the inverse of the scaling matrix
+    this.inverseThighScaling = rescaleMat(
+      idMat4(),
+      1 / this.thighWidthMultiplier,
+      1 / this.thighLengthMultiplier,
+      1 / this.thighWidthMultiplier,
+    );
+
+    var translationX = (2 / 3) * this.torsoRadius;
+    if (!isLeft) {
+      translationX = -translationX;
+    }
+
+    // Translate thigh to the side of the torso
+    initialThighMatrix = translateMat(
+      initialThighMatrix,
+      translationX,
+      -(this.torsoHeight / 2 + this.thighRadius * this.thighLengthMultiplier),
+      0,
+    );
+
+    return initialThighMatrix;
+  }
+
+  initialLegMatrix() {
+    var initialLegMatrix = idMat4();
+
+    // Rescale leg to be longer
+    initialLegMatrix = rescaleMat(
+      initialLegMatrix,
+      this.legWidthMultiplier,
+      this.legLengthMultiplier,
+      this.legWidthMultiplier,
+    );
+
+    // Translate leg down from the thigh
+    var translationY =
+      this.legRadius * this.legLengthMultiplier +
+      this.thighRadius * this.thighLengthMultiplier;
+
+    initialLegMatrix = translateMat(initialLegMatrix, 0, -translationY, 0);
+
+    return initialLegMatrix;
+  }
+
   initialize() {
     // Torso
     var torsoGeometry = new THREE.CubeGeometry(
@@ -132,14 +197,25 @@ class Robot {
     );
     this.head = new THREE.Mesh(headGeometry, this.material);
 
-    // Left Arm
+    // Arms
     var armGeometry = new THREE.SphereGeometry(this.armRadius, 32, 32);
     this.leftArm = new THREE.Mesh(armGeometry, this.material);
     this.rightArm = new THREE.Mesh(armGeometry, this.material);
+
+    // Forearms
     var forearmGeometry = new THREE.SphereGeometry(this.forearmRadius, 32, 32);
     this.leftForearm = new THREE.Mesh(forearmGeometry, this.material);
     this.rightForearm = new THREE.Mesh(forearmGeometry, this.material);
 
+    // Thighs
+    var thighGeometry = new THREE.SphereGeometry(this.thighRadius, 32, 32);
+    this.leftThigh = new THREE.Mesh(thighGeometry, this.material);
+    this.rightThigh = new THREE.Mesh(thighGeometry, this.material);
+
+    // Legs
+    var legGeometry = new THREE.SphereGeometry(this.legRadius, 32, 32);
+    this.leftLeg = new THREE.Mesh(legGeometry, this.material);
+    this.rightLeg = new THREE.Mesh(legGeometry, this.material);
     // TODO
 
     // =========================================================================
@@ -184,8 +260,39 @@ class Robot {
         this.rightForearmInitialMatrix,
       ),
     );
+
+    // Thigh transformations
+    this.leftThighInitialMatrix = this.initialThighMatrix(true);
+    this.rightThighInitialMatrix = this.initialThighMatrix(false);
+    this.leftThighMatrix = idMat4();
+    this.rightThighMatrix = idMat4();
+    this.leftThigh.setMatrix(
+      multMat(this.torso.matrix, this.leftThighInitialMatrix),
+    );
+    this.rightThigh.setMatrix(
+      multMat(this.torso.matrix, this.rightThighInitialMatrix),
+    );
+
+    // Leg transformations
+    this.leftLegInitialMatrix = this.initialLegMatrix();
+    this.rightLegInitialMatrix = this.initialLegMatrix();
+    this.leftLegMatrix = idMat4();
+    this.rightLegMatrix = idMat4();
+    this.leftLeg.setMatrix(
+      multMat(
+        multMat(this.leftThigh.matrix, this.inverseThighScaling),
+        this.leftLegInitialMatrix,
+      ),
+    );
+    this.rightLeg.setMatrix(
+      multMat(
+        multMat(this.rightThigh.matrix, this.inverseThighScaling),
+        this.rightLegInitialMatrix,
+      ),
+    );
+
     // TODO
-    //
+
     // =========================================================================
     // =========================================================================
 
@@ -196,6 +303,10 @@ class Robot {
     scene.add(this.rightArm);
     scene.add(this.leftForearm);
     scene.add(this.rightForearm);
+    scene.add(this.leftThigh);
+    scene.add(this.rightThigh);
+    scene.add(this.leftLeg);
+    scene.add(this.rightLeg);
     // TODO
   }
 
@@ -207,6 +318,8 @@ class Robot {
     this.updateHead();
     this.updateArm(true);
     this.updateArm(false);
+    this.updateThigh(true);
+    this.updateThigh(false);
   }
 
   updateHead() {
@@ -216,20 +329,15 @@ class Robot {
   }
 
   updateArm(isLeft) {
+    var matrix;
     if (isLeft) {
-      var leftArmMultMatrix = multMat(
-        this.leftArmMatrix,
-        this.leftArmInitialMatrix,
-      );
-      var leftArmFinalMatrix = multMat(this.torso.matrix, leftArmMultMatrix);
-      this.leftArm.setMatrix(leftArmFinalMatrix);
+      matrix = multMat(this.leftArmMatrix, this.leftArmInitialMatrix);
+      matrix = multMat(this.torso.matrix, matrix);
+      this.leftArm.setMatrix(matrix);
     } else {
-      var rightArmMultMatrix = multMat(
-        this.rightArmMatrix,
-        this.rightArmInitialMatrix,
-      );
-      var rightArmFinalMatrix = multMat(this.torso.matrix, rightArmMultMatrix);
-      this.rightArm.setMatrix(rightArmFinalMatrix);
+      matrix = multMat(this.rightArmMatrix, this.rightArmInitialMatrix);
+      matrix = multMat(this.torso.matrix, matrix);
+      this.rightArm.setMatrix(matrix);
     }
     // Update dependent parts
     this.updateForearm(isLeft);
@@ -247,6 +355,36 @@ class Robot {
       parentMatrix = multMat(this.rightArm.matrix, this.inverseArmScaling);
       matrix = multMat(parentMatrix, matrix);
       this.rightForearm.setMatrix(matrix);
+    }
+  }
+
+  updateThigh(isLeft) {
+    var matrix;
+    if (isLeft) {
+      matrix = multMat(this.leftThighMatrix, this.leftThighInitialMatrix);
+      matrix = multMat(this.torso.matrix, matrix);
+      this.leftThigh.setMatrix(matrix);
+    } else {
+      matrix = multMat(this.rightThighMatrix, this.rightThighInitialMatrix);
+      matrix = multMat(this.torso.matrix, matrix);
+      this.rightThigh.setMatrix(matrix);
+    }
+    // Update dependent parts
+    this.updateLeg(isLeft);
+  }
+
+  updateLeg(isLeft) {
+    var matrix, parentMatrix;
+    if (isLeft) {
+      matrix = multMat(this.leftLegMatrix, this.leftLegInitialMatrix);
+      parentMatrix = multMat(this.leftThigh.matrix, this.inverseThighScaling);
+      matrix = multMat(parentMatrix, matrix);
+      this.leftLeg.setMatrix(matrix);
+    } else {
+      matrix = multMat(this.rightLegMatrix, this.rightLegInitialMatrix);
+      parentMatrix = multMat(this.rightThigh.matrix, this.inverseThighScaling);
+      matrix = multMat(parentMatrix, matrix);
+      this.rightLeg.setMatrix(matrix);
     }
   }
 
@@ -311,7 +449,7 @@ class Robot {
   }
 
   rotateForearm(angle, isLeft) {
-    var translationY = this.armRadius * this.armLengthMultiplier; // this.forearmRadius * this.forearmLengthMultiplier is cancelled in the equation
+    var translationY = -(this.armRadius * this.armLengthMultiplier); // this.forearmRadius * this.forearmLengthMultiplier is cancelled in the equation
 
     var forearmMatrix;
     if (isLeft) {
@@ -321,9 +459,9 @@ class Robot {
     }
 
     var newForearmMatrix = idMat4();
-    newForearmMatrix = translateMat(newForearmMatrix, 0, translationY, 0);
-    newForearmMatrix = rotateMat(newForearmMatrix, angle, "x");
     newForearmMatrix = translateMat(newForearmMatrix, 0, -translationY, 0);
+    newForearmMatrix = rotateMat(newForearmMatrix, angle, "x");
+    newForearmMatrix = translateMat(newForearmMatrix, 0, translationY, 0);
 
     if (isLeft) {
       this.leftForearmMatrix = multMat(forearmMatrix, newForearmMatrix);
@@ -332,6 +470,66 @@ class Robot {
     }
 
     this.updateForearm(isLeft);
+  }
+
+  rotateThigh(angle, isLeft) {
+    var translationX = (2 / 3) * this.torsoRadius;
+    var translationY = -(this.thighRadius * this.thighLengthMultiplier); // this.torsoHeight / 2 is cancelled from the equation
+
+    var thighMatrix;
+    if (isLeft) {
+      thighMatrix = this.leftThighMatrix;
+    } else {
+      thighMatrix = this.rightThighMatrix;
+      translationX = -translationX;
+    }
+
+    var newThighMatrix = idMat4();
+    newThighMatrix = translateMat(
+      newThighMatrix,
+      -translationX,
+      -translationY,
+      0,
+    );
+    newThighMatrix = rotateMat(newThighMatrix, angle, "x");
+    newThighMatrix = translateMat(
+      newThighMatrix,
+      translationX,
+      translationY,
+      0,
+    );
+
+    if (isLeft) {
+      this.leftThighMatrix = multMat(thighMatrix, newThighMatrix);
+    } else {
+      this.rightThighMatrix = multMat(thighMatrix, newThighMatrix);
+    }
+
+    this.updateThigh(isLeft);
+  }
+
+  rotateLeg(angle, isLeft) {
+    var translationY = -(this.thighRadius * this.thighLengthMultiplier); // this.legRadius * this.legLengthMultiplier is cancelled in the equation
+
+    var legMatrix;
+    if (isLeft) {
+      legMatrix = this.leftLegMatrix;
+    } else {
+      legMatrix = this.rightLegMatrix;
+    }
+
+    var newLegMatrix = idMat4();
+    newLegMatrix = translateMat(newLegMatrix, 0, -translationY, 0);
+    newLegMatrix = rotateMat(newLegMatrix, angle, "x");
+    newLegMatrix = translateMat(newLegMatrix, 0, translationY, 0);
+
+    if (isLeft) {
+      this.leftLegMatrix = multMat(legMatrix, newLegMatrix);
+    } else {
+      this.rightLegMatrix = multMat(legMatrix, newLegMatrix);
+    }
+
+    this.updateLeg(isLeft);
   }
 
   // Add methods for other parts
