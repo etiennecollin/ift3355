@@ -128,22 +128,22 @@ function checkKeyboard() {
         robot.rotateArm(-0.1, "x", false);
         break;
       case "Left Forearm":
-        robot.rotateForearm(0.1, true);
+        robot.rotateForearm(-0.1, true);
         break;
       case "Right Forearm":
-        robot.rotateForearm(0.1, false);
+        robot.rotateForearm(-0.1, false);
         break;
       case "Left Thigh":
-        robot.rotateThigh(0.1, true);
+        robot.rotateThigh(-0.1, true);
         break;
       case "Left Leg":
-        robot.rotateLeg(0.1, true);
+        robot.rotateLeg(-0.1, true);
         break;
       case "Right Thigh":
-        robot.rotateThigh(0.1, false);
+        robot.rotateThigh(-0.1, false);
         break;
       case "Right Leg":
-        robot.rotateLeg(0.1, false);
+        robot.rotateLeg(-0.1, false);
         break;
       // Add more cases
       // TODO
@@ -166,22 +166,22 @@ function checkKeyboard() {
         robot.rotateArm(0.1, "x", false);
         break;
       case "Left Forearm":
-        robot.rotateForearm(-0.1, true);
+        robot.rotateForearm(0.1, true);
         break;
       case "Right Forearm":
-        robot.rotateForearm(-0.1, false);
+        robot.rotateForearm(0.1, false);
         break;
       case "Left Thigh":
-        robot.rotateThigh(-0.1, true);
+        robot.rotateThigh(0.1, true);
         break;
       case "Left Leg":
-        robot.rotateLeg(-0.1, true);
+        robot.rotateLeg(0.1, true);
         break;
       case "Right Thigh":
-        robot.rotateThigh(-0.1, false);
+        robot.rotateThigh(0.1, false);
         break;
       case "Right Leg":
-        robot.rotateLeg(-0.1, false);
+        robot.rotateLeg(0.1, false);
         break;
       // Add more cases
       // TODO
