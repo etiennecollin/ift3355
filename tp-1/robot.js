@@ -9,7 +9,7 @@ class Robot {
     // Head
     this.headRadius = 0.32;
     this.headTranslationX = 0;
-    this.headTranslationY = this.torsoTranslationY + this.headRadius;
+    this.headTranslationY = this.torsoTranslationY + this.headRadius / 2;
 
     // Arms
     this.armLengthMultiplier = 2.3;
@@ -53,6 +53,11 @@ class Robot {
 
     // Animation
     this.walkDirection = new THREE.Vector3(0, 0, 1);
+    this.animationFrames = 1000;
+    this.animationMaxThighAngle = 0.5;
+    this.animationMaxLegAngle = 0.5;
+    this.animationMinThighAngle = -0.5;
+    this.animationMinLegAngle = -0.5;
 
     // Material
     this.material = new THREE.MeshNormalMaterial();
@@ -191,7 +196,7 @@ class Robot {
 
   initialize() {
     // Torso
-    var torsoGeometry = new THREE.CubeGeometry(
+    var torsoGeometry = new THREE.BoxGeometry(
       2 * this.torsoRadius,
       this.torsoHeight,
       this.torsoRadius,
@@ -200,7 +205,7 @@ class Robot {
     this.torso = new THREE.Mesh(torsoGeometry, this.material);
 
     // Head
-    var headGeometry = new THREE.CubeGeometry(
+    var headGeometry = new THREE.BoxGeometry(
       2 * this.headRadius,
       this.headRadius,
       this.headRadius,
@@ -282,6 +287,8 @@ class Robot {
     this.rightThigh.setMatrix(
       multMat(this.torso.matrix, this.rightThighInitialMatrix),
     );
+    this.leftThighRotationX = 0;
+    this.rightThighRotationX = 0;
 
     // Leg transformations
     this.leftLegInitialMatrix = this.initialLegMatrix();
@@ -300,6 +307,8 @@ class Robot {
         this.rightLegInitialMatrix,
       ),
     );
+    this.leftLegRotationX = 0;
+    this.rightLegRotationX = 0;
 
     // TODO
 
@@ -317,7 +326,38 @@ class Robot {
     scene.add(this.rightThigh);
     scene.add(this.leftLeg);
     scene.add(this.rightLeg);
+
+    this.groundRobot();
     // TODO
+  }
+
+  groundRobot() {
+    // Get min height of legs
+    var leftLegPosition = getPosition(this.leftLeg.matrix, "y");
+    var rightLegPosition = getPosition(this.rightLeg.matrix, "y");
+    var minLegPosition, rotationAngle;
+
+    if (leftLegPosition <= rightLegPosition) {
+      minLegPosition = leftLegPosition;
+      rotationAngle = this.leftLegRotationX + this.leftThighRotationX;
+    } else {
+      minLegPosition = rightLegPosition;
+      rotationAngle = this.rightLegRotationX + this.rightThighRotationX;
+    }
+
+    // Get the position of the tip of the leg
+    var trueMinLegPosition =
+      minLegPosition -
+      Math.cos(rotationAngle) * this.legRadius * this.legLengthMultiplier;
+
+    // Move the robot up by minLegPosition
+    this.torsoMatrix = translateMat(
+      this.torsoMatrix,
+      0,
+      -trueMinLegPosition,
+      0,
+    );
+    this.updateTorso();
   }
 
   updateTorso() {
@@ -420,12 +460,21 @@ class Robot {
     this.updateTorso();
   }
 
-  rotateHead(angle) {
+  rotateHead(angle, axis) {
     var headMatrix = this.headMatrix;
+    var translationX = this.headTranslationX;
+    var translationY = this.headTranslationY;
 
-    this.headMatrix = idMat4();
-    this.headMatrix = rotateMat(this.headMatrix, angle, "y");
-    this.headMatrix = multMat(headMatrix, this.headMatrix);
+    var newHeadMatrix = idMat4();
+    newHeadMatrix = translateMat(
+      newHeadMatrix,
+      -translationX,
+      -translationY,
+      0,
+    );
+    newHeadMatrix = rotateMat(newHeadMatrix, angle, axis);
+    newHeadMatrix = translateMat(newHeadMatrix, translationX, translationY, 0);
+    this.headMatrix = multMat(headMatrix, newHeadMatrix);
 
     this.updateHead();
   }
@@ -510,11 +559,14 @@ class Robot {
 
     if (isLeft) {
       this.leftThighMatrix = multMat(thighMatrix, newThighMatrix);
+      this.leftThighRotationX += angle;
     } else {
       this.rightThighMatrix = multMat(thighMatrix, newThighMatrix);
+      this.rightThighRotationX += angle;
     }
 
     this.updateThigh(isLeft);
+    this.groundRobot();
   }
 
   rotateLeg(angle, isLeft) {
@@ -530,11 +582,14 @@ class Robot {
 
     if (isLeft) {
       this.leftLegMatrix = multMat(legMatrix, newLegMatrix);
+      this.leftLegRotationX += angle;
     } else {
       this.rightLegMatrix = multMat(legMatrix, newLegMatrix);
+      this.rightLegRotationX += angle;
     }
 
     this.updateLeg(isLeft);
+    this.groundRobot();
   }
 
   // Add methods for other parts

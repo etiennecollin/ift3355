@@ -123,3 +123,22 @@ function rescaleMat(matrix, x, y, z) {
 
   return multMat(m, matrix);
 }
+
+function getPosition(matrix, coordinate) {
+  // Get value of @coordinate in @matrix
+  var position;
+  switch (coordinate) {
+    case "x":
+      position = matrix.elements[12];
+      break;
+    case "y":
+      position = matrix.elements[13];
+      break;
+    case "z":
+      position = matrix.elements[14];
+      break;
+    default:
+      throw new Error("Invalid coordinate");
+  }
+  return position;
+}

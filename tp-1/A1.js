@@ -119,6 +119,7 @@ function checkKeyboard() {
         robot.moveTorso(0.1);
         break;
       case "Head":
+        robot.rotateHead(-0.1, "x");
         break;
       case "Left Arm":
         robot.rotateArm(-0.1, "x", true);
@@ -156,6 +157,7 @@ function checkKeyboard() {
         robot.moveTorso(-0.1);
         break;
       case "Head":
+        robot.rotateHead(0.1, "x");
         break;
       case "Left Arm":
         robot.rotateArm(0.1, "x", true);
@@ -193,7 +195,7 @@ function checkKeyboard() {
         robot.rotateTorso(0.1);
         break;
       case "Head":
-        robot.rotateHead(0.1);
+        robot.rotateHead(0.1, "y");
         break;
       case "Left Arm":
         robot.rotateArm(0.1, "z", true);
@@ -213,7 +215,7 @@ function checkKeyboard() {
         robot.rotateTorso(-0.1);
         break;
       case "Head":
-        robot.rotateHead(-0.1);
+        robot.rotateHead(-0.1, "y");
         break;
       case "Left Arm":
         robot.rotateArm(-0.1, "z", true);
