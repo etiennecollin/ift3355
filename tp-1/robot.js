@@ -51,18 +51,53 @@ class Robot {
 
     // Eyes
     this.eyeRadius = 0.05;
-    this.eyeTranslationX = 0.1;
+    this.eyeTranslationX = this.headRadius / 3;
     this.eyeTranslationY = 0;
-    this.eyeTranslationZ = 0.2;
+    this.eyeTranslationZ = (3 * this.headRadius) / 5;
 
     // Animation
     this.walkDirection = new THREE.Vector3(0, 0, 1);
     this.lookDirection = new THREE.Vector3(0, 0, 1);
-    this.animationFrames = 1000;
-    this.animationMaxThighAngle = 0.5;
-    this.animationMaxLegAngle = 0.5;
-    this.animationMinThighAngle = -0.5;
-    this.animationMinLegAngle = -0.5;
+    this.walkAnimationSpeed = 0.1;
+    this.walkCurrentFrame = 0;
+    this.walkFrames = [
+      {
+        leftThigh: 0,
+        leftLeg: 0,
+        rightThigh: 0,
+        rightLeg: 0,
+      },
+      {
+        leftThigh: Math.PI / 4,
+        leftLeg: 0,
+        rightThigh: -Math.PI / 4,
+        rightLeg: (3 * Math.PI) / 16,
+      },
+      {
+        leftThigh: Math.PI / 8,
+        leftLeg: (3 * Math.PI) / 32,
+        rightThigh: -Math.PI / 8,
+        rightLeg: (3 * Math.PI) / 32,
+      },
+      {
+        leftThigh: 0,
+        leftLeg: 0,
+        rightThigh: 0,
+        rightLeg: 0,
+      },
+      {
+        leftThigh: -Math.PI / 4,
+        leftLeg: (3 * Math.PI) / 16,
+        rightThigh: Math.PI / 4,
+        rightLeg: 0,
+      },
+      {
+        leftThigh: -Math.PI / 8,
+        leftLeg: (3 * Math.PI) / 32,
+        rightThigh: Math.PI / 8,
+        rightLeg: (3 * Math.PI) / 32,
+      },
+    ];
 
     // Material
     this.material = new THREE.MeshNormalMaterial();
@@ -365,6 +400,55 @@ class Robot {
     this.groundRobot();
   }
 
+  getEffectiveRotationAngle(angle) {
+    if (Math.abs(angle) < this.walkAnimationSpeed) {
+      return angle;
+    } else {
+      return angle > 0 ? this.walkAnimationSpeed : -this.walkAnimationSpeed;
+    }
+  }
+
+  walk() {
+    var currentFrame = this.walkFrames[this.walkCurrentFrame];
+    var rotated = false;
+    var rotation;
+
+    // Check if we need to update the walk frame
+    if (currentFrame.leftThigh != this.leftThighRotationX) {
+      rotation = this.getEffectiveRotationAngle(
+        currentFrame.leftThigh - this.leftThighRotationX,
+      );
+      this.rotateThigh(rotation, true);
+      rotated = true;
+    }
+    if (currentFrame.leftLeg != this.leftLegRotationX) {
+      rotation = this.getEffectiveRotationAngle(
+        currentFrame.leftLeg - this.leftLegRotationX,
+      );
+      this.rotateLeg(rotation, true);
+      rotated = true;
+    }
+    if (currentFrame.rightThigh != this.rightThighRotationX) {
+      rotation = this.getEffectiveRotationAngle(
+        currentFrame.rightThigh - this.rightThighRotationX,
+      );
+      this.rotateThigh(rotation, false);
+      rotated = true;
+    }
+    if (currentFrame.rightLeg != this.rightLegRotationX) {
+      rotation = this.getEffectiveRotationAngle(
+        currentFrame.rightLeg - this.rightLegRotationX,
+      );
+      this.rotateLeg(rotation, false);
+      rotated = true;
+    }
+
+    if (!rotated) {
+      this.walkCurrentFrame =
+        (this.walkCurrentFrame + 1) % this.walkFrames.length;
+    }
+  }
+
   groundRobot() {
     // Get min height of legs
     var leftLegPosition = getPosition(this.leftLeg.matrix, "y");
@@ -502,6 +586,7 @@ class Robot {
       speed * this.walkDirection.z,
     );
     this.updateTorso();
+    this.walk();
   }
 
   rotateHead(angle, axis) {
@@ -639,7 +724,7 @@ class Robot {
 
   look_at(point) {
     var norm = new THREE.Vector3(0, 1, 0);
-    point = point.sub(robot.torso.position);
+    point = point.sub(this.torso.position);
 
     var angle = Math.acos(
       (this.walkDirection.x * point.x + this.walkDirection.z * point.z) /
@@ -649,15 +734,15 @@ class Robot {
     var direction = point.cross(this.walkDirection).dot(norm);
     if (angle < 0.1) {
       if (direction < 0) {
-        robot.rotateTorso(angle);
+        this.rotateTorso(angle);
       } else {
-        robot.rotateTorso(-angle);
+        this.rotateTorso(-angle);
       }
     } else {
       if (direction < 0) {
-        robot.rotateTorso(0.1);
+        this.rotateTorso(0.1);
       } else {
-        robot.rotateTorso(-0.1);
+        this.rotateTorso(-0.1);
       }
     }
   }
