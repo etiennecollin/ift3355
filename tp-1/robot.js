@@ -373,28 +373,23 @@ class Robot {
     // Get min height of legs
     var leftLegPosition = getPosition(this.leftLeg.matrix, "y");
     var rightLegPosition = getPosition(this.rightLeg.matrix, "y");
-    var minLegPosition, rotationAngle;
 
-    if (leftLegPosition <= rightLegPosition) {
-      minLegPosition = leftLegPosition;
-      rotationAngle = this.leftLegRotationX + this.leftThighRotationX;
-    } else {
-      minLegPosition = rightLegPosition;
-      rotationAngle = this.rightLegRotationX + this.rightThighRotationX;
-    }
+    // Get the effective rotation angle of the legs
+    var rotationAngleLeft = this.leftLegRotationX + this.leftThighRotationX;
+    var rotationAngleRight = this.rightLegRotationX + this.rightThighRotationX;
 
-    // Get the position of the tip of the leg
-    var trueMinLegPosition =
-      minLegPosition -
-      Math.cos(rotationAngle) * this.legRadius * this.legLengthMultiplier;
+    // Get the position of the tip of the legs
+    var trueLeftLegPosition =
+      leftLegPosition -
+      Math.cos(rotationAngleLeft) * this.legRadius * this.legLengthMultiplier;
+    var trueRightLegPosition =
+      rightLegPosition -
+      Math.cos(rotationAngleRight) * this.legRadius * this.legLengthMultiplier;
+
+    var minLegPosition = Math.min(trueLeftLegPosition, trueRightLegPosition);
 
     // Move the robot up by minLegPosition
-    this.torsoMatrix = translateMat(
-      this.torsoMatrix,
-      0,
-      -trueMinLegPosition,
-      0,
-    );
+    this.torsoMatrix = translateMat(this.torsoMatrix, 0, -minLegPosition, 0);
     this.updateTorso();
   }
 
