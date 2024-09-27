@@ -51,6 +51,8 @@ class Robot {
 
     // TODO
 
+    this.eyeRadius = 0.05
+
     // Animation
     this.walkDirection = new THREE.Vector3(0, 0, 1);
     this.animationFrames = 1000;
@@ -58,6 +60,7 @@ class Robot {
     this.animationMaxLegAngle = 0.5;
     this.animationMinThighAngle = -0.5;
     this.animationMinLegAngle = -0.5;
+
 
     // Material
     this.material = new THREE.MeshNormalMaterial();
@@ -118,6 +121,19 @@ class Robot {
     );
 
     return initialArmMatrix;
+  }
+
+  initialEyeMatrix(isLeft){
+    var initialEyeMatrix = idMat4()
+
+    if(isLeft){
+      initialEyeMatrix = translateMat(initialEyeMatrix, 0.1,0, 0.2 )
+    }
+    else{
+      initialEyeMatrix = translateMat(initialEyeMatrix, -0.1,0, 0.2 )
+    }
+    
+    return initialEyeMatrix
   }
 
   initialForearmMatrix() {
@@ -221,6 +237,11 @@ class Robot {
     var forearmGeometry = new THREE.SphereGeometry(this.forearmRadius, 32, 32);
     this.leftForearm = new THREE.Mesh(forearmGeometry, this.material);
     this.rightForearm = new THREE.Mesh(forearmGeometry, this.material);
+    //eye
+
+    var eyeGeometry = new THREE.SphereGeometry(this.eyeRadius, 32, 32)
+    this.leftEye = new THREE.Mesh(eyeGeometry, this.material)
+    this.rightEye = new THREE.Mesh(eyeGeometry, this.material)
 
     // Thighs
     var thighGeometry = new THREE.SphereGeometry(this.thighRadius, 32, 32);
@@ -284,6 +305,7 @@ class Robot {
     this.leftThigh.setMatrix(
       multMat(this.torso.matrix, this.leftThighInitialMatrix),
     );
+<<<<<<< HEAD
     this.rightThigh.setMatrix(
       multMat(this.torso.matrix, this.rightThighInitialMatrix),
     );
@@ -310,6 +332,17 @@ class Robot {
     this.leftLegRotationX = 0;
     this.rightLegRotationX = 0;
 
+=======
+
+    //eye transformation
+
+    this.leftEyeInitialMatrix = this.initialEyeMatrix(true)
+    this.rightEyeInitialMatrix = this.initialEyeMatrix(false)
+    this.rightEyeMatrix = idMat4()
+    this.rightEye.setMatrix(multMat(this.head.matrix, this.rightEyeInitialMatrix))
+    this.leftEyeMatrix = idMat4()
+    this.leftEye.setMatrix(multMat(this.head.matrix, this.leftEyeInitialMatrix))
+>>>>>>> looking_direction
     // TODO
 
     // =========================================================================
@@ -322,12 +355,17 @@ class Robot {
     scene.add(this.rightArm);
     scene.add(this.leftForearm);
     scene.add(this.rightForearm);
+<<<<<<< HEAD
     scene.add(this.leftThigh);
     scene.add(this.rightThigh);
     scene.add(this.leftLeg);
     scene.add(this.rightLeg);
 
     this.groundRobot();
+=======
+    scene.add(this.leftEye)
+    scene.add(this.rightEye)
+>>>>>>> looking_direction
     // TODO
   }
 
@@ -376,6 +414,26 @@ class Robot {
     var headMultMatrix = multMat(this.headMatrix, this.headInitialMatrix);
     var headFinalMatrix = multMat(this.torso.matrix, headMultMatrix);
     this.head.setMatrix(headFinalMatrix);
+    this.updateEye(true)
+    this.updateEye(false)
+  }
+
+  updateEye(isLeft){
+    if (isLeft) {
+      var leftEyeMultMatrix = multMat(
+        this.leftEyeMatrix,
+        this.leftEyeInitialMatrix,
+      );
+      var leftEyeFinalMatrix = multMat(this.head.matrix, leftEyeMultMatrix);
+      this.leftEye.setMatrix(leftEyeFinalMatrix);
+    } else {
+      var rightEyeMultMatrix = multMat(
+        this.rightEyeMatrix,
+        this.rightEyeInitialMatrix,
+      );
+      var rightEyeFinalMatrix = multMat(this.head.matrix, rightEyeMultMatrix);
+      this.rightEye.setMatrix(rightEyeFinalMatrix);
+    }
   }
 
   updateArm(isLeft) {
@@ -440,7 +498,6 @@ class Robot {
 
   rotateTorso(angle) {
     var torsoMatrix = this.torsoMatrix;
-
     this.torsoMatrix = idMat4();
     this.torsoMatrix = rotateMat(this.torsoMatrix, angle, "y");
     this.torsoMatrix = multMat(torsoMatrix, this.torsoMatrix);
@@ -477,6 +534,8 @@ class Robot {
     this.headMatrix = multMat(headMatrix, newHeadMatrix);
 
     this.updateHead();
+
+    this.rotateVec3(this.lookDirection, angle, "y")
   }
 
   rotateArm(angle, axis, isLeft) {
@@ -518,12 +577,16 @@ class Robot {
       0,
     );
     newForearmMatrix = rotateMat(newForearmMatrix, angle, "x");
+<<<<<<< HEAD
     newForearmMatrix = translateMat(
       newForearmMatrix,
       translationX,
       translationY,
       0,
     );
+=======
+    newForearmMatrix = translateMat(newForearmMatrix, 0, -translationY, 0);    
+>>>>>>> looking_direction
 
     if (isLeft) {
       this.leftForearmMatrix = multMat(forearmMatrix, newForearmMatrix);
@@ -596,7 +659,39 @@ class Robot {
   // TODO
 
   look_at(point) {
+    var norm = new THREE.Vector3(0,1,0)
+    point=point.sub(robot.torso.position)
+    
+    var angle = Math.acos((this.walkDirection.x*point.x+this.walkDirection.z*point.z)/(Math.sqrt(point.x**2+point.z**2)*Math.sqrt(this.walkDirection.x**2+this.walkDirection.z**2)))
+    var direction = point.cross(this.walkDirection).dot(norm)
+    console.log(angle)
+    if(angle<0.1){
+      if(direction<0){
+        robot.rotateTorso(angle)
+      
+      }
+      else{
+        robot.rotateTorso(-angle)
+      }
+    }
+    else{
+
+    
+    if(direction<0){
+      robot.rotateTorso(0.1)
+    }
+    else{
+      robot.rotateTorso(-0.1)
+    }
+    }
+    }
+    
+
+
+
+
+
     // Compute and apply the correct rotation of the head and the torso for the robot to look at @point
     //TODO
-  }
 }
+
