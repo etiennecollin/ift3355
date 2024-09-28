@@ -49,19 +49,55 @@ class Robot {
       this.thighRadius * this.thighLengthMultiplier
     );
 
-    // TODO
-
-    this.eyeRadius = 0.05
+    // Eyes
+    this.eyeRadius = 0.05;
+    this.eyeTranslationX = this.headRadius / 3;
+    this.eyeTranslationY = 0;
+    this.eyeTranslationZ = (3 * this.headRadius) / 5;
 
     // Animation
     this.walkDirection = new THREE.Vector3(0, 0, 1);
-    this.lookDirection = new THREE.Vector3(0,0,1)
-    this.animationFrames = 1000;
-    this.animationMaxThighAngle = 0.5;
-    this.animationMaxLegAngle = 0.5;
-    this.animationMinThighAngle = -0.5;
-    this.animationMinLegAngle = -0.5;
-
+    this.lookDirection = new THREE.Vector3(0, 0, 1);
+    this.walkAnimationSpeed = 0.1;
+    this.walkCurrentFrame = 0;
+    this.walkFrames = [
+      {
+        leftThigh: 0,
+        leftLeg: 0,
+        rightThigh: 0,
+        rightLeg: 0,
+      },
+      {
+        leftThigh: Math.PI / 4,
+        leftLeg: 0,
+        rightThigh: -Math.PI / 4,
+        rightLeg: (3 * Math.PI) / 16,
+      },
+      {
+        leftThigh: Math.PI / 8,
+        leftLeg: (3 * Math.PI) / 32,
+        rightThigh: -Math.PI / 8,
+        rightLeg: (3 * Math.PI) / 32,
+      },
+      {
+        leftThigh: 0,
+        leftLeg: 0,
+        rightThigh: 0,
+        rightLeg: 0,
+      },
+      {
+        leftThigh: -Math.PI / 4,
+        leftLeg: (3 * Math.PI) / 16,
+        rightThigh: Math.PI / 4,
+        rightLeg: 0,
+      },
+      {
+        leftThigh: -Math.PI / 8,
+        leftLeg: (3 * Math.PI) / 32,
+        rightThigh: Math.PI / 8,
+        rightLeg: (3 * Math.PI) / 32,
+      },
+    ];
 
     // Material
     this.material = new THREE.MeshNormalMaterial();
@@ -124,17 +160,17 @@ class Robot {
     return initialArmMatrix;
   }
 
-  initialEyeMatrix(isLeft){
-    var initialEyeMatrix = idMat4()
+  initialEyeMatrix(isLeft) {
+    var initialEyeMatrix = idMat4();
 
-    if(isLeft){
-      initialEyeMatrix = translateMat(initialEyeMatrix, 0.1,0, 0.2 )
-    }
-    else{
-      initialEyeMatrix = translateMat(initialEyeMatrix, -0.1,0, 0.2 )
-    }
-    
-    return initialEyeMatrix
+    initialEyeMatrix = translateMat(
+      initialEyeMatrix,
+      isLeft ? this.eyeTranslationX : -this.eyeTranslationX,
+      this.eyeTranslationY,
+      this.eyeTranslationZ,
+    );
+
+    return initialEyeMatrix;
   }
 
   initialForearmMatrix() {
@@ -238,11 +274,6 @@ class Robot {
     var forearmGeometry = new THREE.SphereGeometry(this.forearmRadius, 32, 32);
     this.leftForearm = new THREE.Mesh(forearmGeometry, this.material);
     this.rightForearm = new THREE.Mesh(forearmGeometry, this.material);
-    //eye
-
-    var eyeGeometry = new THREE.SphereGeometry(this.eyeRadius, 32, 32)
-    this.leftEye = new THREE.Mesh(eyeGeometry, this.material)
-    this.rightEye = new THREE.Mesh(eyeGeometry, this.material)
 
     // Thighs
     var thighGeometry = new THREE.SphereGeometry(this.thighRadius, 32, 32);
@@ -253,7 +284,11 @@ class Robot {
     var legGeometry = new THREE.SphereGeometry(this.legRadius, 32, 32);
     this.leftLeg = new THREE.Mesh(legGeometry, this.material);
     this.rightLeg = new THREE.Mesh(legGeometry, this.material);
-    // TODO
+
+    // Eyes
+    var eyeGeometry = new THREE.SphereGeometry(this.eyeRadius, 32, 32);
+    this.leftEye = new THREE.Mesh(eyeGeometry, this.material);
+    this.rightEye = new THREE.Mesh(eyeGeometry, this.material);
 
     // =========================================================================
     // =========================================================================
@@ -357,39 +392,86 @@ class Robot {
     scene.add(this.rightThigh);
     scene.add(this.leftLeg);
     scene.add(this.rightLeg);
+    scene.add(this.leftEye);
+    scene.add(this.rightEye);
 
+    // Make sure the robot touches the ground
     this.groundRobot();
     scene.add(this.leftEye)
     scene.add(this.rightEye)
     // TODO
   }
 
+  getEffectiveRotationAngle(angle) {
+    if (Math.abs(angle) < this.walkAnimationSpeed) {
+      return angle;
+    } else {
+      return angle > 0 ? this.walkAnimationSpeed : -this.walkAnimationSpeed;
+    }
+  }
+
+  walk() {
+    var currentFrame = this.walkFrames[this.walkCurrentFrame];
+    var rotated = false;
+    var rotation;
+
+    // Check if we need to update the walk frame
+    if (currentFrame.leftThigh != this.leftThighRotationX) {
+      rotation = this.getEffectiveRotationAngle(
+        currentFrame.leftThigh - this.leftThighRotationX,
+      );
+      this.rotateThigh(rotation, true);
+      rotated = true;
+    }
+    if (currentFrame.leftLeg != this.leftLegRotationX) {
+      rotation = this.getEffectiveRotationAngle(
+        currentFrame.leftLeg - this.leftLegRotationX,
+      );
+      this.rotateLeg(rotation, true);
+      rotated = true;
+    }
+    if (currentFrame.rightThigh != this.rightThighRotationX) {
+      rotation = this.getEffectiveRotationAngle(
+        currentFrame.rightThigh - this.rightThighRotationX,
+      );
+      this.rotateThigh(rotation, false);
+      rotated = true;
+    }
+    if (currentFrame.rightLeg != this.rightLegRotationX) {
+      rotation = this.getEffectiveRotationAngle(
+        currentFrame.rightLeg - this.rightLegRotationX,
+      );
+      this.rotateLeg(rotation, false);
+      rotated = true;
+    }
+
+    if (!rotated) {
+      this.walkCurrentFrame =
+        (this.walkCurrentFrame + 1) % this.walkFrames.length;
+    }
+  }
+
   groundRobot() {
     // Get min height of legs
     var leftLegPosition = getPosition(this.leftLeg.matrix, "y");
     var rightLegPosition = getPosition(this.rightLeg.matrix, "y");
-    var minLegPosition, rotationAngle;
 
-    if (leftLegPosition <= rightLegPosition) {
-      minLegPosition = leftLegPosition;
-      rotationAngle = this.leftLegRotationX + this.leftThighRotationX;
-    } else {
-      minLegPosition = rightLegPosition;
-      rotationAngle = this.rightLegRotationX + this.rightThighRotationX;
-    }
+    // Get the effective rotation angle of the legs
+    var rotationAngleLeft = this.leftLegRotationX + this.leftThighRotationX;
+    var rotationAngleRight = this.rightLegRotationX + this.rightThighRotationX;
 
-    // Get the position of the tip of the leg
-    var trueMinLegPosition =
-      minLegPosition -
-      Math.cos(rotationAngle) * this.legRadius * this.legLengthMultiplier;
+    // Get the position of the tip of the legs
+    var trueLeftLegPosition =
+      leftLegPosition -
+      Math.cos(rotationAngleLeft) * this.legRadius * this.legLengthMultiplier;
+    var trueRightLegPosition =
+      rightLegPosition -
+      Math.cos(rotationAngleRight) * this.legRadius * this.legLengthMultiplier;
+
+    var minLegPosition = Math.min(trueLeftLegPosition, trueRightLegPosition);
 
     // Move the robot up by minLegPosition
-    this.torsoMatrix = translateMat(
-      this.torsoMatrix,
-      0,
-      -trueMinLegPosition,
-      0,
-    );
+    this.torsoMatrix = translateMat(this.torsoMatrix, 0, -minLegPosition, 0);
     this.updateTorso();
   }
 
@@ -409,25 +491,20 @@ class Robot {
     var headMultMatrix = multMat(this.headMatrix, this.headInitialMatrix);
     var headFinalMatrix = multMat(this.torso.matrix, headMultMatrix);
     this.head.setMatrix(headFinalMatrix);
-    this.updateEye(true)
-    this.updateEye(false)
+    this.updateEye(true);
+    this.updateEye(false);
   }
 
-  updateEye(isLeft){
+  updateEye(isLeft) {
+    var matrix;
     if (isLeft) {
-      var leftEyeMultMatrix = multMat(
-        this.leftEyeMatrix,
-        this.leftEyeInitialMatrix,
-      );
-      var leftEyeFinalMatrix = multMat(this.head.matrix, leftEyeMultMatrix);
-      this.leftEye.setMatrix(leftEyeFinalMatrix);
+      matrix = multMat(this.leftEyeMatrix, this.leftEyeInitialMatrix);
+      matrix = multMat(this.head.matrix, matrix);
+      this.leftEye.setMatrix(matrix);
     } else {
-      var rightEyeMultMatrix = multMat(
-        this.rightEyeMatrix,
-        this.rightEyeInitialMatrix,
-      );
-      var rightEyeFinalMatrix = multMat(this.head.matrix, rightEyeMultMatrix);
-      this.rightEye.setMatrix(rightEyeFinalMatrix);
+      matrix = multMat(this.rightEyeMatrix, this.rightEyeInitialMatrix);
+      matrix = multMat(this.head.matrix, matrix);
+      this.rightEye.setMatrix(matrix);
     }
   }
 
@@ -500,6 +577,7 @@ class Robot {
     this.updateTorso();
 
     this.walkDirection = rotateVec3(this.walkDirection, angle, "y");
+    rotateVec3(this.lookDirection, angle, "y");
   }
 
   moveTorso(speed) {
@@ -510,6 +588,7 @@ class Robot {
       speed * this.walkDirection.z,
     );
     this.updateTorso();
+    this.walk();
   }
 
   rotateHead(angle, axis) {
@@ -646,9 +725,6 @@ class Robot {
     this.groundRobot();
   }
 
-  // Add methods for other parts
-  // TODO
-
   look_at(point) {
     var norm = new THREE.Vector3(0,1,0)
     var norm2 = new THREE.Vector3(1,0,0)
@@ -662,10 +738,13 @@ class Robot {
         robot.rotateTorso(angle)
       
       }
-      else{
-        robot.rotateTorso(-angle)
+     else {
+      if (direction < 0) {
+        this.rotateTorso(0.1);
+      } else {
+        this.rotateTorso(-0.1);
       }
-    }
+    }}
     else{
 
     
@@ -701,4 +780,3 @@ class Robot {
     // Compute and apply the correct rotation of the head and the torso for the robot to look at @point
     //TODO
 }
-
