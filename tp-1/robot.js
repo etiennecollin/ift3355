@@ -753,18 +753,18 @@ class Robot {
       }
     }
 
-    var angleHead = Math.acos(
-      (this.lookDirection.y * headPoint.y +
-        this.lookDirection.z * headPoint.z) /
-        (Math.sqrt(headPoint.y ** 2 + headPoint.z ** 2) *
-          Math.sqrt(this.lookDirection.y ** 2 + this.lookDirection.z ** 2)),
-    );
-    if (angleHead > 0.1) {
-      if (headPoint.cross(this.lookDirection).dot(horizontal) > 0) {
-        this.rotateHead(0.1, "x");
-      } else {
-        this.rotateHead(-0.1, "x");
-      }
-    }
+    // var angleHead = Math.acos(
+    //   (this.lookDirection.y * headPoint.y +
+    //     this.lookDirection.z * headPoint.z) /
+    //     (Math.sqrt(headPoint.y ** 2 + headPoint.z ** 2) *
+    //       Math.sqrt(this.lookDirection.y ** 2 + this.lookDirection.z ** 2)),
+    // );
+    // if (angleHead > 0.1) {
+    //   if (headPoint.cross(this.lookDirection).dot(horizontal) > 0) {
+    //     this.rotateHead(-0.1, "x");
+    //   } else {
+    //     this.rotateHead(0.1, "x");
+    //   }
+    // }
   }
 }
