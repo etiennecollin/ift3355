@@ -605,7 +605,7 @@ class Robot {
     newHeadMatrix = translateMat(newHeadMatrix, translationX, translationY, 0);
     this.headMatrix = multMat(headMatrix, newHeadMatrix);
     this.updateHead();
-    this.lookDirection = rotateVec3(this.lookDirection, angle, axis)
+    this.lookDirection = rotateVec3(this.lookDirection, angle, axis);
   }
 
   rotateArm(angle, axis, isLeft) {
@@ -722,17 +722,17 @@ class Robot {
   }
 
   look_at(point) {
-    var norm = new THREE.Vector3(0,1,0)
-    var norm2 = new THREE.Vector3(1,0,0)
-    var point2=point.sub(robot.torso.position)
-    var point3 = point.sub(robot.head.position)
-    var angle = Math.acos((this.walkDirection.x*point2.x+this.walkDirection.z*point2.z)/(Math.sqrt(point2.x**2+point2.z**2)*Math.sqrt(this.walkDirection.x**2+this.walkDirection.z**2)))
-    var direction = point2.cross(this.walkDirection).dot(norm)
+    var norm = new THREE.Vector3(0, 1, 0);
+    var norm2 = new THREE.Vector3(1, 0, 0);
+    var point2 = point.sub(robot.torso.position);
+    var point3 = point.sub(robot.head.position);
+    var angle = Math.acos(
+      (this.walkDirection.x * point2.x + this.walkDirection.z * point2.z) /
+        (Math.sqrt(point2.x ** 2 + point2.z ** 2) *
+          Math.sqrt(this.walkDirection.x ** 2 + this.walkDirection.z ** 2)),
+    );
+    var direction = point2.cross(this.walkDirection).dot(norm);
 
-    if(angle<0.1){
-      if(direction<0){
-        robot.rotateTorso(angle)
-      
     if (angle < 0.1) {
       if (direction < 0) {
         this.rotateTorso(angle);
@@ -746,14 +746,17 @@ class Robot {
         this.rotateTorso(-0.1);
       }
     }
-    
-    var angleHead = Math.acos((this.lookDirection.y*point3.y+this.lookDirection.z*point3.z)/(Math.sqrt(point3.y**2+point3.z**2)*Math.sqrt(this.lookDirection.y**2+this.lookDirection.z**2)))
-    if(angleHead>0.1){
-      if(point3.cross(this.lookDirection).dot(norm2)>0){
-        robot.rotateHead(0.1,"x")
-      }
-      else{
-        robot.rotateHead(-0.1,"x")
+
+    var angleHead = Math.acos(
+      (this.lookDirection.y * point3.y + this.lookDirection.z * point3.z) /
+        (Math.sqrt(point3.y ** 2 + point3.z ** 2) *
+          Math.sqrt(this.lookDirection.y ** 2 + this.lookDirection.z ** 2)),
+    );
+    if (angleHead > 0.1) {
+      if (point3.cross(this.lookDirection).dot(norm2) > 0) {
+        robot.rotateHead(0.1, "x");
+      } else {
+        robot.rotateHead(-0.1, "x");
       }
     }
   }
