@@ -733,23 +733,18 @@ class Robot {
       if(direction<0){
         robot.rotateTorso(angle)
       
+    if (angle < 0.1) {
+      if (direction < 0) {
+        this.rotateTorso(angle);
+      } else {
+        this.rotateTorso(-angle);
       }
-     else {
+    } else {
       if (direction < 0) {
         this.rotateTorso(0.1);
       } else {
         this.rotateTorso(-0.1);
       }
-    }}
-    else{
-
-    
-    if(direction<0){
-      robot.rotateTorso(0.1)
-    }
-    else{
-      robot.rotateTorso(-0.1)
-    }
     }
     
     var angleHead = Math.acos((this.lookDirection.y*point3.y+this.lookDirection.z*point3.z)/(Math.sqrt(point3.y**2+point3.z**2)*Math.sqrt(this.lookDirection.y**2+this.lookDirection.z**2)))
