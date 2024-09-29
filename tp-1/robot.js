@@ -762,12 +762,4 @@ class Robot {
       }
     }
   }
-    
-
-
-
-
-
-    // Compute and apply the correct rotation of the head and the torso for the robot to look at @point
-    //TODO
 }
