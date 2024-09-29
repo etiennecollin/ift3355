@@ -398,9 +398,6 @@ class Robot {
 
     // Make sure the robot touches the ground
     this.groundRobot();
-    scene.add(this.leftEye)
-    scene.add(this.rightEye)
-    // TODO
   }
 
   getEffectiveRotationAngle(angle) {
