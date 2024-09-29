@@ -606,8 +606,6 @@ class Robot {
     this.headMatrix = multMat(headMatrix, newHeadMatrix);
     this.updateHead();
     this.lookDirection = rotateVec3(this.lookDirection, angle, axis)
-
-    
   }
 
   rotateArm(angle, axis, isLeft) {
