@@ -367,16 +367,17 @@ class Robot {
     this.leftLegRotationX = 0;
     this.rightLegRotationX = 0;
 
-
-    //eye transformation
-
-    this.leftEyeInitialMatrix = this.initialEyeMatrix(true)
-    this.rightEyeInitialMatrix = this.initialEyeMatrix(false)
-    this.rightEyeMatrix = idMat4()
-    this.rightEye.setMatrix(multMat(this.head.matrix, this.rightEyeInitialMatrix))
-    this.leftEyeMatrix = idMat4()
-    this.leftEye.setMatrix(multMat(this.head.matrix, this.leftEyeInitialMatrix))
-    // TODO
+    // Eye transformation
+    this.leftEyeInitialMatrix = this.initialEyeMatrix(true);
+    this.rightEyeInitialMatrix = this.initialEyeMatrix(false);
+    this.leftEyeMatrix = idMat4();
+    this.rightEyeMatrix = idMat4();
+    this.leftEye.setMatrix(
+      multMat(this.head.matrix, this.leftEyeInitialMatrix),
+    );
+    this.rightEye.setMatrix(
+      multMat(this.head.matrix, this.rightEyeInitialMatrix),
+    );
 
     // =========================================================================
     // =========================================================================
