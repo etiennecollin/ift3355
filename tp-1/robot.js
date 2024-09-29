@@ -604,8 +604,8 @@ class Robot {
     newHeadMatrix = rotateMat(newHeadMatrix, angle, axis);
     newHeadMatrix = translateMat(newHeadMatrix, translationX, translationY, 0);
     this.headMatrix = multMat(headMatrix, newHeadMatrix);
-    this.lookDirection = rotateVec3(this.lookDirection, angle, axis)
     this.updateHead();
+    this.lookDirection = rotateVec3(this.lookDirection, angle, axis)
 
     
   }
