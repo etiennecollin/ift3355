@@ -761,11 +761,6 @@ class Robot {
         robot.rotateHead(-0.1,"x")
       }
     }
-    
-    
-    
-
-    
   }
     
 
