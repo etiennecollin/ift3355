@@ -10,6 +10,7 @@ class Robot {
     this.headRadius = 0.32;
     this.headTranslationX = 0;
     this.headTranslationY = this.torsoTranslationY + this.headRadius / 2;
+    this.headRotationX = 0;
 
     // Arms
     this.armLengthMultiplier = 2.3;
@@ -609,6 +610,9 @@ class Robot {
     this.headMatrix = multMat(headMatrix, newHeadMatrix);
 
     this.updateHead();
+    if (axis == "x") {
+      this.headRotationX += angle;
+    }
     this.lookDirection = rotateVec3(this.lookDirection, angle, axis);
   }
 
@@ -726,55 +730,30 @@ class Robot {
   }
 
   look_at(point) {
-    var horizontal = new THREE.Vector3(1, 0, 0);
+    var angle, targetRotation;
+
+    var torso2point = subtractVec3(point, getPoint(this.torso.matrix));
+    targetRotation = Math.acos(
+      Math.sqrt(
+        (this.walkDirection.x ** 2 + this.walkDirection.z ** 2) /
+          (torso2point.x ** 2 + torso2point.z ** 2),
+      ),
+    );
+
     var vertical = new THREE.Vector3(0, 1, 0);
-    var direction;
+    var direction = torso2point.cross(this.walkDirection).dot(vertical);
+    targetRotation = isNaN(targetRotation) ? Infinity : targetRotation;
+    angle = Math.min(targetRotation, this.maxAnimationAngle);
+    angle = direction < 0 ? angle : -angle;
+    this.rotateTorso(angle);
 
-    var torso2point = point.sub(getPoint(this.torso.matrix));
-    var requiredTorsoRotation = Math.acos(
-      (this.walkDirection.x * torso2point.x +
-        this.walkDirection.z * torso2point.z) /
-        (Math.sqrt(torso2point.x ** 2 + torso2point.z ** 2) *
-          Math.sqrt(this.walkDirection.x ** 2 + this.walkDirection.z ** 2)),
-    );
-
-    direction = torso2point.cross(this.walkDirection).dot(vertical);
-    if (requiredTorsoRotation < 0.1) {
-      if (direction < 0) {
-        this.rotateTorso(requiredTorsoRotation);
-      } else {
-        this.rotateTorso(-requiredTorsoRotation);
-      }
-    } else {
-      if (direction < 0) {
-        this.rotateTorso(this.maxAnimationAngle);
-      } else {
-        this.rotateTorso(-this.maxAnimationAngle);
-      }
-    }
-
-    var head2point = point.sub(getPoint(this.head.matrix));
-    var requiredHeadRotation = Math.acos(
-      (this.lookDirection.y * head2point.y +
-        this.lookDirection.z * head2point.z) /
-        (Math.sqrt(head2point.y ** 2 + head2point.z ** 2) *
-          Math.sqrt(this.lookDirection.y ** 2 + this.lookDirection.z ** 2)),
-    );
-
-    // FIXME this does not work. The requiredHeadRotation might not be good
-    direction = head2point.cross(this.lookDirection).dot(horizontal);
-    if (requiredHeadRotation < 0.1) {
-      if (direction > 0) {
-        this.rotateHead(requiredHeadRotation, "x");
-      } else {
-        this.rotateHead(-requiredHeadRotation, "x");
-      }
-    } else {
-      if (direction > 0) {
-        this.rotateHead(0.1, "x");
-      } else {
-        this.rotateHead(-0.1, "x");
-      }
-    }
+    // This uses spherical coordinates to calculate the head rotation
+    var headPoint = getPoint(this.head.matrix);
+    var head2point = subtractVec3(point, headPoint);
+    var height = headPoint.y - point.y;
+    targetRotation =
+      Math.asin(height / getNormVec3(head2point)) - this.headRotationX;
+    angle = this.getEffectiveRotationAngle(targetRotation);
+    this.rotateHead(angle, "x");
   }
 }
