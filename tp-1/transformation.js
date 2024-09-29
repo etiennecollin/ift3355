@@ -166,3 +166,8 @@ function subtractVec3(v1, v2) {
   // Substract vector @v2 from @v1
   return new THREE.Vector3(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
 }
+
+function dotVec3(v1, v2) {
+  // Dot product between @v1 and @v2
+  return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+}

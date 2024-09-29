@@ -5,6 +5,7 @@ class Robot {
     this.torsoRadius = 0.75;
     this.torsoTranslationX = 0;
     this.torsoTranslationY = this.torsoHeight / 2;
+    this.torsoRotationY = 0;
 
     // Head
     this.headRadius = 0.32;
@@ -576,6 +577,7 @@ class Robot {
 
     this.updateTorso();
 
+    this.torsoRotationY += angle;
     this.walkDirection = rotateVec3(this.walkDirection, angle, "y");
     this.lookDirection = rotateVec3(this.lookDirection, angle, "y");
   }
@@ -730,20 +732,31 @@ class Robot {
   }
 
   look_at(point) {
-    var angle, targetRotation;
+    var angle;
+    var vertical = new THREE.Vector3(0, 1, 0);
 
+    // Compute the direction vector between the torso and the point
     var torso2point = subtractVec3(point, getPoint(this.torso.matrix));
-    targetRotation = Math.acos(
-      Math.sqrt(
-        (this.walkDirection.x ** 2 + this.walkDirection.z ** 2) /
-          (torso2point.x ** 2 + torso2point.z ** 2),
-      ),
+    // Project it on the ground
+    torso2point.y = 0;
+
+    // Find the direction the rotation should have
+    var direction = new THREE.Vector3()
+      .crossVectors(torso2point, this.walkDirection)
+      .dot(vertical);
+
+    // Compute the rotation angle
+    angle = Math.acos(
+      dotVec3(this.walkDirection, torso2point) /
+        (getNormVec3(this.walkDirection) * getNormVec3(torso2point)),
     );
 
-    var vertical = new THREE.Vector3(0, 1, 0);
-    var direction = torso2point.cross(this.walkDirection).dot(vertical);
-    targetRotation = isNaN(targetRotation) ? Infinity : targetRotation;
-    angle = Math.min(targetRotation, this.maxAnimationAngle);
+    // If the two vectors are parallel, the ratio is 1 and acos is not defined
+    // In this case, we set the target rotation to 0
+    angle = isNaN(angle) ? 0 : angle;
+
+    // Use a rotation of at most maxAnimationAngle
+    angle = Math.min(Math.abs(angle), this.maxAnimationAngle);
     angle = direction < 0 ? angle : -angle;
     this.rotateTorso(angle);
 
@@ -751,9 +764,8 @@ class Robot {
     var headPoint = getPoint(this.head.matrix);
     var head2point = subtractVec3(point, headPoint);
     var height = headPoint.y - point.y;
-    targetRotation =
-      Math.asin(height / getNormVec3(head2point)) - this.headRotationX;
-    angle = this.getEffectiveRotationAngle(targetRotation);
+    angle = Math.asin(height / getNormVec3(head2point)) - this.headRotationX;
+    angle = this.getEffectiveRotationAngle(angle);
     this.rotateHead(angle, "x");
   }
 }
