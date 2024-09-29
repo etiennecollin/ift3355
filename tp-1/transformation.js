@@ -142,3 +142,27 @@ function getPosition(matrix, coordinate) {
   }
   return position;
 }
+
+function getPoint(matrix) {
+  // Get point from @matrix
+  return new THREE.Vector3(
+    matrix.elements[12],
+    matrix.elements[13],
+    matrix.elements[14],
+  );
+}
+
+function getNormVec3(v) {
+  return Math.sqrt(v.x ** 2 + v.y ** 2 + v.z ** 2);
+}
+
+function normalizeVec3(v) {
+  // Normalize vector @v
+  var norm = getNormVec3(v);
+  return new THREE.Vector3(v.x / norm, v.y / norm, v.z / norm);
+}
+
+function subtractVec3(v1, v2) {
+  // Substract vector @v2 from @v1
+  return new THREE.Vector3(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
+}
