@@ -142,3 +142,12 @@ function getPosition(matrix, coordinate) {
   }
   return position;
 }
+
+function getPoint(matrix) {
+  // Get point from @matrix
+  return new THREE.Vector3(
+    matrix.elements[12],
+    matrix.elements[13],
+    matrix.elements[14],
+  );
+}
