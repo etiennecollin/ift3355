@@ -728,8 +728,8 @@ class Robot {
   look_at(point) {
     var vertical = new THREE.Vector3(0, 1, 0);
     var horizontal = new THREE.Vector3(1, 0, 0);
-    var torsoPoint = point.sub(getPoint(robot.torso.matrix));
-    var headPoint = point.sub(getPoint(robot.head.matrix));
+    var torsoPoint = point.sub(getPoint(this.torso.matrix));
+    var headPoint = point.sub(getPoint(this.head.matrix));
 
     var angle = Math.acos(
       (this.walkDirection.x * torsoPoint.x +
@@ -761,9 +761,9 @@ class Robot {
     );
     if (angleHead > 0.1) {
       if (headPoint.cross(this.lookDirection).dot(horizontal) > 0) {
-        robot.rotateHead(0.1, "x");
+        this.rotateHead(0.1, "x");
       } else {
-        robot.rotateHead(-0.1, "x");
+        this.rotateHead(-0.1, "x");
       }
     }
   }
