@@ -55,20 +55,16 @@ var selectedRobotComponent = 0;
 var components = [
   "Torso",
   "Head",
-  // Add parts names
-  // TODO
+
   "Left Arm",
   "Left Forearm",
   "Right Arm",
   "Right Forearm",
 
-  "Left Leg",
   "Left Thigh",
-  "Right Leg",
+  "Left Leg",
   "Right Thigh",
-
-  "Left Eye",
-  "Right Eye",
+  "Right Leg",
 ];
 var numberComponents = components.length;
 
@@ -145,8 +141,6 @@ function checkKeyboard() {
       case "Right Leg":
         robot.rotateLeg(-0.1, false);
         break;
-      // Add more cases
-      // TODO
     }
   }
 
@@ -183,8 +177,6 @@ function checkKeyboard() {
       case "Right Leg":
         robot.rotateLeg(0.1, false);
         break;
-      // Add more cases
-      // TODO
     }
   }
 
@@ -203,8 +195,6 @@ function checkKeyboard() {
       case "Right Arm":
         robot.rotateArm(0.1, "z", false);
         break;
-      // Add more cases
-      // TODO
     }
   }
 
@@ -223,8 +213,6 @@ function checkKeyboard() {
       case "Right Arm":
         robot.rotateArm(-0.1, "z", false);
         break;
-      // Add more cases
-      // TODO
     }
   }
 
