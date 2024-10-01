@@ -12,6 +12,9 @@ class Robot {
     this.headTranslationX = 0;
     this.headTranslationY = this.torsoTranslationY + this.headRadius / 2;
     this.headRotationX = 0;
+    this.headRotationY = 0;
+    this.headRotationZ = 0;
+    this.headLimitRotation = Math.PI / 2;
 
     // Arms
     this.armLengthMultiplier = 2.3;
@@ -20,6 +23,14 @@ class Robot {
     this.armTranslationX =
       this.torsoRadius + this.armRadius * this.armWidthMultiplier;
     this.armTranslationY = this.torsoHeight * 0.1;
+    this.leftArmRotationX = 0;
+    this.rightArmRotationX = 0;
+    this.leftArmRotationZ = 0;
+    this.rightArmRotationZ = 0;
+    this.armLimitRotationMinX = Math.PI / 4;
+    this.armLimitRotationMaxX = -Math.PI;
+    this.armLimitRotationMinZ = 0;
+    this.armLimitRotationMaxZ = -Math.PI;
 
     // Forearms
     this.forearmLengthMultiplier = 2.75;
@@ -30,6 +41,10 @@ class Robot {
       this.forearmRadius * this.forearmLengthMultiplier +
       this.armRadius * this.armLengthMultiplier
     );
+    this.leftForearmRotationX = 0;
+    this.rightForearmRotationX = 0;
+    this.forearmLimitRotationMin = 0;
+    this.forearmLimitRotationMax = -(3 * Math.PI) / 4;
 
     // Thighs
     this.thighWidthMultiplier = 1;
@@ -40,6 +55,10 @@ class Robot {
       this.torsoTranslationY +
       this.thighRadius * this.thighLengthMultiplier
     );
+    this.leftThighRotationX = 0;
+    this.rightThighRotationX = 0;
+    this.thighLimitRotationMin = Math.PI / 2;
+    this.thighLimitRotationMax = -Math.PI / 2;
 
     // Legs
     this.legWidthMultiplier = 0.8;
@@ -50,6 +69,10 @@ class Robot {
       this.legRadius * this.legLengthMultiplier +
       this.thighRadius * this.thighLengthMultiplier
     );
+    this.leftLegRotationX = 0;
+    this.rightLegRotationX = 0;
+    this.legLimitRotationMax = -Math.PI / 8;
+    this.legLimitRotationMin = (3 * Math.PI) / 4;
 
     // Eyes
     this.eyeRadius = 0.05;
@@ -346,8 +369,6 @@ class Robot {
     this.rightThigh.setMatrix(
       multMat(this.torso.matrix, this.rightThighInitialMatrix),
     );
-    this.leftThighRotationX = 0;
-    this.rightThighRotationX = 0;
 
     // Leg transformations
     this.leftLegInitialMatrix = this.initialLegMatrix();
@@ -366,8 +387,6 @@ class Robot {
         this.rightLegInitialMatrix,
       ),
     );
-    this.leftLegRotationX = 0;
-    this.rightLegRotationX = 0;
 
     // Eye transformation
     this.leftEyeInitialMatrix = this.initialEyeMatrix(true);
@@ -595,10 +614,27 @@ class Robot {
   }
 
   rotateHead(angle, axis) {
+    // Rotate the head round its center
+    // The axis of the rotation can be given as a string "x", "y" or "z"
+    // The axis can also be given as a normalized THREE.Vector3
+
+    // Check if the angle is within the limits
+    if (
+      (axis == "x" &&
+        Math.abs(this.headRotationX + angle) > this.headLimitRotation) ||
+      (axis == "y" &&
+        Math.abs(this.headRotationY + angle) > this.headLimitRotation) ||
+      (axis == "z" &&
+        Math.abs(this.headRotationZ + angle) > this.headLimitRotation)
+    ) {
+      return;
+    }
+
     var headMatrix = this.headMatrix;
     var translationX = this.headTranslationX;
     var translationY = this.headTranslationY;
 
+    // Translate head to the origin
     var newHeadMatrix = idMat4();
     newHeadMatrix = translateMat(
       newHeadMatrix,
@@ -607,18 +643,68 @@ class Robot {
       0,
     );
 
-    newHeadMatrix = rotateMat(newHeadMatrix, angle, axis);
+    // Get the rotation axis
+    var vec;
+    if (axis == "x") {
+      vec = new THREE.Vector3(1, 0, 0);
+      this.lookDirection = rotateVec3(this.lookDirection, angle, "x");
+      this.headRotationX += angle;
+    } else if (axis == "y") {
+      vec = new THREE.Vector3(0, 1, 0);
+      this.lookDirection = rotateVec3(this.lookDirection, angle, "y");
+      this.headRotationY += angle;
+    } else if (axis == "z") {
+      vec = new THREE.Vector3(0, 0, 1);
+      this.lookDirection = rotateVec3(this.lookDirection, angle, "z");
+      this.headRotationZ += angle;
+    } else {
+      vec = axis;
+      this.lookDirection = rotateVec3Vec(this.lookDirection, angle, vec);
+    }
+
+    // Rotate head around the axis
+    newHeadMatrix = rotateMatVec(newHeadMatrix, angle, vec);
+
+    // Translate head back to its original position
     newHeadMatrix = translateMat(newHeadMatrix, translationX, translationY, 0);
     this.headMatrix = multMat(headMatrix, newHeadMatrix);
 
+    // Update head and its children
     this.updateHead();
-    if (axis == "x") {
-      this.headRotationX += angle;
-    }
-    this.lookDirection = rotateVec3(this.lookDirection, angle, axis);
   }
 
   rotateArm(angle, axis, isLeft) {
+    // Make sure the angle is within the limits
+    if (axis == "x") {
+      if (isLeft) {
+        if (this.leftArmRotationX + angle < this.armLimitRotationMaxX) {
+          angle = this.armLimitRotationMaxX - this.leftArmRotationX;
+        } else if (this.leftArmRotationX + angle > this.armLimitRotationMinX) {
+          angle = this.armLimitRotationMinX - this.leftArmRotationX;
+        }
+      } else {
+        if (this.rightArmRotationX + angle < this.armLimitRotationMaxX) {
+          angle = this.armLimitRotationMaxX - this.rightArmRotationX;
+        } else if (this.rightArmRotationX + angle > this.armLimitRotationMinX) {
+          angle = this.armLimitRotationMinX - this.rightArmRotationX;
+        }
+      }
+    } else if (axis == "z") {
+      if (isLeft) {
+        if (this.leftArmRotationZ + angle < this.armLimitRotationMaxZ) {
+          angle = this.armLimitRotationMaxZ - this.leftArmRotationZ;
+        } else if (this.leftArmRotationZ + angle > this.armLimitRotationMinZ) {
+          angle = this.armLimitRotationMinZ - this.leftArmRotationZ;
+        }
+      } else {
+        if (this.rightArmRotationZ + angle < this.armLimitRotationMaxZ) {
+          angle = this.armLimitRotationMaxZ - this.rightArmRotationZ;
+        } else if (this.rightArmRotationZ + angle > this.armLimitRotationMinZ) {
+          angle = this.armLimitRotationMinZ - this.rightArmRotationZ;
+        }
+      }
+    }
+
     var translationX = isLeft ? this.armTranslationX : -this.armTranslationX;
     var translationY =
       this.armTranslationY + this.armRadius * this.armLengthMultiplier;
@@ -631,14 +717,45 @@ class Robot {
 
     if (isLeft) {
       this.leftArmMatrix = multMat(armMatrix, newArmMatrix);
+      if (axis == "x") {
+        this.leftArmRotationX += angle;
+      } else if (axis == "z") {
+        this.leftArmRotationZ += angle;
+      }
     } else {
       this.rightArmMatrix = multMat(armMatrix, newArmMatrix);
+      if (axis == "x") {
+        this.rightArmRotationX += angle;
+      } else if (axis == "z") {
+        this.rightArmRotationZ += angle;
+      }
     }
 
     this.updateArm(isLeft);
   }
 
   rotateForearm(angle, isLeft) {
+    // Make sure the angle is within the limits
+    if (isLeft) {
+      if (this.leftForearmRotationX + angle < this.forearmLimitRotationMax) {
+        angle = this.forearmLimitRotationMax - this.leftForearmRotationX;
+      } else if (
+        this.leftForearmRotationX + angle >
+        this.forearmLimitRotationMin
+      ) {
+        angle = this.forearmLimitRotationMin - this.leftForearmRotationX;
+      }
+    } else {
+      if (this.rightForearmRotationX + angle < this.forearmLimitRotationMax) {
+        angle = this.forearmLimitRotationMax - this.rightForearmRotationX;
+      } else if (
+        this.rightForearmRotationX + angle >
+        this.forearmLimitRotationMin
+      ) {
+        angle = this.forearmLimitRotationMin - this.rightForearmRotationX;
+      }
+    }
+
     var translationX = isLeft
       ? this.forearmTranslationX
       : -this.forearmTranslationX;
@@ -666,14 +783,34 @@ class Robot {
 
     if (isLeft) {
       this.leftForearmMatrix = multMat(forearmMatrix, newForearmMatrix);
+      this.leftForearmRotationX += angle;
     } else {
       this.rightForearmMatrix = multMat(forearmMatrix, newForearmMatrix);
+      this.rightForearmRotationX += angle;
     }
 
     this.updateForearm(isLeft);
   }
 
   rotateThigh(angle, isLeft) {
+    // Make sure the angle is within the limits
+    if (isLeft) {
+      if (this.leftThighRotationX + angle < this.thighLimitRotationMax) {
+        angle = this.thighLimitRotationMax - this.leftThighRotationX;
+      } else if (this.leftThighRotationX + angle > this.thighLimitRotationMin) {
+        angle = this.thighLimitRotationMin - this.leftThighRotationX;
+      }
+    } else {
+      if (this.rightThighRotationX + angle < this.thighLimitRotationMax) {
+        angle = this.thighLimitRotationMax - this.rightThighRotationX;
+      } else if (
+        this.rightThighRotationX + angle >
+        this.thighLimitRotationMin
+      ) {
+        angle = this.thighLimitRotationMin - this.rightThighRotationX;
+      }
+    }
+
     var translationX = isLeft
       ? this.thighTranslationX
       : -this.thighTranslationX;
@@ -709,6 +846,21 @@ class Robot {
   }
 
   rotateLeg(angle, isLeft) {
+    // Make sure the angle is within the limits
+    if (isLeft) {
+      if (this.leftLegRotationX + angle < this.legLimitRotationMax) {
+        angle = this.legLimitRotationMax - this.leftLegRotationX;
+      } else if (this.leftLegRotationX + angle > this.legLimitRotationMin) {
+        angle = this.legLimitRotationMin - this.leftLegRotationX;
+      }
+    } else {
+      if (this.rightLegRotationX + angle < this.legLimitRotationMax) {
+        angle = this.legLimitRotationMax - this.rightLegRotationX;
+      } else if (this.rightLegRotationX + angle > this.legLimitRotationMin) {
+        angle = this.legLimitRotationMin - this.rightLegRotationX;
+      }
+    }
+
     var translationX = isLeft ? this.legTranslationX : -this.legTranslationX;
     var translationY =
       this.legTranslationY + this.legRadius * this.legLengthMultiplier;
@@ -732,8 +884,12 @@ class Robot {
   }
 
   look_at(point) {
-    var angle;
+    var angle, direction;
     var vertical = new THREE.Vector3(0, 1, 0);
+
+    // =================================
+    // TORSO
+    // =================================
 
     // Compute the direction vector between the torso and the point
     var torso2point = subtractVec3(point, getPoint(this.torso.matrix));
@@ -741,9 +897,7 @@ class Robot {
     torso2point.y = 0;
 
     // Find the direction the rotation should have
-    var direction = new THREE.Vector3()
-      .crossVectors(torso2point, this.walkDirection)
-      .dot(vertical);
+    direction = crossVec3(torso2point, this.walkDirection).dot(vertical);
 
     // Compute the rotation angle
     angle = Math.acos(
@@ -759,6 +913,10 @@ class Robot {
     angle = Math.min(Math.abs(angle), this.maxAnimationAngle);
     angle = direction < 0 ? angle : -angle;
     this.rotateTorso(angle);
+
+    // =================================
+    // HEAD
+    // =================================
 
     // This uses spherical coordinates to calculate the head rotation
     var headPoint = getPoint(this.head.matrix);
