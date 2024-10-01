@@ -25,6 +25,69 @@ function translateMat(matrix, x, y, z) {
   return multMat(m, matrix);
 }
 
+function addMat4(m1, m2) {
+  // Add two matrices
+  // m1, m2: THREE.Matrix4
+  var m = new THREE.Matrix4();
+  for (var i = 0; i < 12; i++) {
+    m.elements[i] = m1.elements[i] + m2.elements[i];
+  }
+  return m;
+}
+
+function multiplyScalarMat4(matrix, scalar) {
+  // Multiply matrix by scalar
+  // m: THREE.Matrix4
+  // scalar: float
+  var m = new THREE.Matrix4();
+  for (var i = 0; i < 12; i++) {
+    m.elements[i] = matrix.elements[i] * scalar;
+  }
+  return m;
+}
+
+function rotateMatVec(matrix, angle, vec) {
+  // Apply a rotation by @angle with respect to @vec to @matrix
+  // This uses the Rodrigues' rotation formula
+  // https://en.wikipedia.org/wiki/Rodrigues'_rotation_formula
+
+  var K = new THREE.Matrix4();
+  K.set(
+    0,
+    -vec.z,
+    vec.y,
+    0,
+    vec.z,
+    0,
+    -vec.x,
+    0,
+    -vec.y,
+    vec.x,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+  );
+
+  var cos_val = Math.cos(angle);
+  var sin_val = Math.sin(angle);
+
+  var m = idMat4();
+  m = addMat4(m, multiplyScalarMat4(K, sin_val));
+  m = addMat4(m, multiplyScalarMat4(multMat(K, K), 1 - cos_val));
+  return multMat(m, matrix);
+}
+
+function rotateVec3Vec(v, angle, vec) {
+  // Apply a rotation by @angle with respect to @vec to @v
+  // This uses the Rodrigues' rotation formula
+  // https://en.wikipedia.org/wiki/Rodrigues'_rotation_formula
+
+  return v.applyMatrix4(rotateMatVec(idMat4(), angle, vec));
+}
+
 function rotateMat(matrix, angle, axis) {
   // Apply rotation by @angle with respect to @axis to @matrix
   // matrix: THREE.Matrix4
@@ -170,4 +233,13 @@ function subtractVec3(v1, v2) {
 function dotVec3(v1, v2) {
   // Dot product between @v1 and @v2
   return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+}
+
+function crossVec3(v1, v2) {
+  // Cross product between @v1 and @v2
+  return new THREE.Vector3(
+    v1.y * v2.z - v1.z * v2.y,
+    v1.z * v2.x - v1.x * v2.z,
+    v1.x * v2.y - v1.y * v2.x,
+  );
 }
