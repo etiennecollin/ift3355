@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="P:\projects\formation\universite-2cycle_udem\a22\ift3355\tp2\version_complete\extern\pcg32\pcg32.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="P:\projects\formation\universite-2cycle_udem\a22\ift3355\tp2\version_complete\extern\pcg32\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{10F404CE-CB8C-3F5C-B8E3-EF01CC8206B2}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

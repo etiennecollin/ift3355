@@ -1,0 +1,139 @@
+#Meta argument for the actual scene
+container "Naive"
+dimension 640 480
+samples_per_pixel 5
+jitter_radius 0.5
+max_ray_depth 4
+ambient_light [0.1 0.1 0.1]
+
+# Comme gluPerspective.
+Perspective 30.0 1.33 3 20
+
+# Comme gluLookAt.
+LookAt  0  1.25  15 # position de l'oeil
+        0  0 0 # position du focus
+        0 0.992278 -0.124035 # Vecteur up
+
+Material "glass"
+    "texture_albedo" "" # Fichier vers la texture albedo
+    "color_albedo" [0.2 0.2 0.2] # Couleur albedo
+    "k_ambient"   0.1 # Coefficient Ambient
+    "k_diffuse"   0 # Coefficent Diffus
+    "k_specular"  0.5 # Coefficient speculaire
+    "shininess" 1 # Exposant speculaire
+    "metallic" 1 # Coefficent metallique
+    "k_refraction" 1 # Facteur de refraction
+        "refractive_index"   4 # Indice de refraction
+    "k_reflection" 0 # Indice de reflection
+
+Material "white"
+    "texture_albedo" ""
+    "color_albedo" [0.6 0.6 0.6]
+    "k_ambient"   0.1
+    "k_diffuse"   0.6
+    "k_specular"  0.5
+    "shininess" 10.0
+    "metallic" 1
+    "k_refraction" 0
+        "refractive_index"   1.0
+    "k_reflection" 0
+
+Material "red"
+    "texture_albedo" ""
+    "color_albedo" [1 0 0]
+    "k_ambient"   0.1
+    "k_diffuse"   0.6
+    "k_specular"  0.5
+    "shininess" 50.0
+    "metallic" 0.5
+    "k_refraction" 0
+        "refractive_index"   1.0
+    "k_reflection" 0
+
+Material "blue"
+    "texture_albedo" ""
+    "color_albedo" [0 0 1]
+    "k_ambient"   0.1
+    "k_diffuse"   0.6
+    "k_specular"  0.5
+    "shininess" 30.0
+    "metallic" 0.5
+    "k_refraction" 0
+        "refractive_index"   1.0
+    "k_reflection" 0
+
+Material "green"
+    "texture_albedo" ""
+    "color_albedo" [0 1 0]
+    "k_ambient"   0.1
+    "k_diffuse"   0.6
+    "k_specular"  0.5
+    "shininess" 30.0
+    "metallic" 0.5
+    "k_refraction" 0
+        "refractive_index"   1.0
+    "k_reflection" 0
+
+Material "cage"
+    "texture_albedo" "data/assets/texture/cage.bmp"
+    "color_albedo" [0.6 0.6 0.6]
+    "k_ambient"   1.0
+    "k_diffuse"   0
+    "k_specular"  0
+    "shininess" 1
+    "metallic" 1
+    "k_refraction" 0
+        "refractive_index"   1.0
+    "k_reflection" 0
+
+###############################################################################
+
+#Transparent Wall
+PushMatrix
+    Translate 0 0 -1.5
+    Quad 3 "glass"
+PopMatrix
+
+# Ceil
+PushMatrix
+    Translate 0 3 0
+    Rotate 90 1 0 0
+    Quad 3 "white"
+PopMatrix
+
+# Floor
+PushMatrix
+    Translate 0 -3 0
+    Rotate -90 1 0 0
+    Quad 3 "white"
+PopMatrix
+
+#Front wall
+PushMatrix
+    Translate 0 0 -3
+    Quad 3 "blue"
+PopMatrix
+
+#Right Wall
+PushMatrix
+    Translate 3 0 0
+    Rotate 90 0 1 0
+    Quad 3 "green"
+PopMatrix
+
+#Left Wall
+PushMatrix
+    Translate -3 0 0
+    Rotate -90 0 1 0
+    Quad 3 "red"
+PopMatrix
+
+###############################################################################
+# Spécification pour une source de lumière :
+# La syntaxe basique est `PointLight x y z`, suivi par une liste de paramètres
+# (à partir de laquelle la classe PointLight récupère ses valeurs).
+
+#Lumière blanche
+SphericalLight 0 -0.5 0
+    "emission" [0.6 0.6 0.6]    # couleur [r g b]
+    "radius" 0
