@@ -1,0 +1,63 @@
+#Meta argument for the actual scene
+container "Naive"
+dimension 640 480
+samples_per_pixel 5
+jitter_radius 0.5
+max_ray_depth  2
+ambient_light [0.1 0.1 0.1]
+
+# Comme gluPerspective.
+Perspective 30.0 1.33 3 20
+
+# Comme gluLookAt.
+LookAt  0  1.25  15 # position de l'oeil
+        0  0 0 # position du focus
+        0 0.992278 -0.124035 # Vecteur up
+
+Material "white"
+    "texture_albedo" ""
+    "color_albedo" [0.6 0.6 0.6]
+    "k_ambient"   0.1
+    "k_diffuse"   0.6
+    "k_specular"  0.5
+    "shininess" 10.0
+    "metallic" 1
+    "k_refraction" 0
+        "refractive_index"   1.0
+    "k_reflection" 0
+
+Material "red"
+    "texture_albedo" ""
+    "color_albedo" [1 0 0]
+    "k_ambient"   0.1
+    "k_diffuse"   0.6
+    "k_specular"  0.5
+    "shininess" 50.0
+    "metallic" 0.5
+    "k_refraction" 0
+        "refractive_index"   1.0
+    "k_reflection" 0
+
+###############################################################################
+
+PushMatrix
+    Translate 0 0 0
+    Mesh "data/assets/mesh/icosphere.obj" "red"
+PopMatrix
+
+# Floor
+PushMatrix
+    Translate 0 -1 0
+    Rotate -90 1 0 0
+    Quad 10 "white"
+PopMatrix
+
+###############################################################################
+# Spécification pour une source de lumière :
+# La syntaxe basique est `PointLight x y z`, suivi par une liste de paramètres
+# (à partir de laquelle la classe PointLight récupère ses valeurs).
+
+#Lumière blanche
+SphericalLight -1 1 -2
+    "emission" [1 1 1]    # couleur [r g b]
+    "radius" 0.4

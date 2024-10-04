@@ -1,0 +1,179 @@
+#Meta argument for the actual scene
+dimension 640 480 #Largeur Hauteur
+container "BVH" # Type de container pour nos objets [Naive,BVH]
+samples_per_pixel 5 # Nombre d'echantillon par pixel
+jitter_radius 0.5 # Variation aléatoire dans un carrée lors du lancer de rayon.
+max_ray_depth  2 # Profondeur maximale
+ambient_light [0.1 0.1 0.1] # Lumière ambiante associée à la lampe.
+
+# Comme gluPerspective.
+Perspective 30.0 1.33 3 20
+
+# Comme gluLookAt.
+LookAt  0  1.25  15 # position de l'oeil
+        0  0 0 # position du focus
+        0 0.992278 -0.124035 # Vecteur up
+
+Material "glass"
+    "texture_albedo" "" # Fichier vers la texture albedo
+    "color_albedo" [0.2 0.2 0.2] # Couleur albedo
+    "k_ambient"   0.1 # Coefficient Ambient
+    "k_diffuse"   0 # Coefficent Diffus
+    "k_specular"  0.5 # Coefficient speculaire
+    "shininess" 1 # Exposant speculaire
+    "metallic" 1 # Coefficent metallique
+    "k_refraction" 1 # Facteur de refraction
+        "refractive_index"   4 # Indice de refraction
+    "k_reflection" 0 # Indice de reflection
+
+Material "mirror"
+    "texture_albedo" ""
+    "color_albedo" [0.2 0.2 0.2]
+    "k_ambient"   0.1
+    "k_diffuse"   0
+    "k_specular"  0.5
+    "shininess" 1
+    "metallic" 1
+    "k_refraction" 0
+        "refractive_index"   1
+    "k_reflection" 1
+
+Material "white"
+    "texture_albedo" ""
+    "color_albedo" [0.6 0.6 0.6]
+    "k_ambient"   0.1
+    "k_diffuse"   0.6
+    "k_specular"  0.5
+    "shininess" 10.0
+    "metallic" 1
+    "k_refraction" 0
+        "refractive_index"   1.0
+    "k_reflection" 0
+
+Material "red"
+    "texture_albedo" ""
+    "color_albedo" [1 0 0]
+    "k_ambient"   0.1
+    "k_diffuse"   0.6
+    "k_specular"  0.5
+    "shininess" 50.0
+    "metallic" 0.5
+    "k_refraction" 0
+        "refractive_index"   1.0
+    "k_reflection" 0
+
+Material "blue"
+    "texture_albedo" ""
+    "color_albedo" [0 0 1]
+    "k_ambient"   0.1
+    "k_diffuse"   0.6
+    "k_specular"  0.5
+    "shininess" 30.0
+    "metallic" 0.5
+    "k_refraction" 0
+        "refractive_index"   1.0
+    "k_reflection" 0
+
+Material "green"
+    "texture_albedo" ""
+    "color_albedo" [0 1 0]
+    "k_ambient"   0.1
+    "k_diffuse"   0.6
+    "k_specular"  0.5
+    "shininess" 30.0
+    "metallic" 0.5
+    "k_refraction" 0
+        "refractive_index"   1.0
+    "k_reflection" 0
+
+Material "cage"
+    "texture_albedo" "data/assets/texture/cage.bmp"
+    "color_albedo" [0.6 0.6 0.6]
+    "k_ambient"   1.0
+    "k_diffuse"   0
+    "k_specular"  0
+    "shininess" 1
+    "metallic" 1
+    "k_refraction" 0
+        "refractive_index"   1.0
+    "k_reflection" 0
+
+###############################################################################
+
+PushMatrix
+    Translate 1 -2 1.5 # Translation x y z
+    Sphere 0.75 "mirror" # Sphere radius "material"
+PopMatrix
+
+PushMatrix
+    Translate 1 2 0
+    Rotate 90 1 0 0 # Rotation deg x y z
+    Rotate 15 0 0 1
+    Cylinder 0.75 1.5 "red" # Sphere rayon hauteur "material"
+PopMatrix
+
+PushMatrix
+    Translate -0.80 -2 0
+    Sphere 0.75 "glass" 
+PopMatrix
+
+PushMatrix
+    Translate -1 1.5 0
+    Scale 0.5 0.5 0.5 # Mise à l'echelle x y z
+    Mesh "data/assets/mesh/cube.obj" "red" # Mesh "path_to_obj" "material"
+PopMatrix
+
+# Ceil
+PushMatrix
+    Translate 0 3 0
+    Rotate 90 1 0 0
+    Quad 3 "white" # Quad demi_largeur "material"
+PopMatrix
+
+# Floor
+PushMatrix
+    Translate 0 -3 0
+    Rotate -90 1 0 0
+    Quad 3 "white"
+PopMatrix
+
+#Front wall
+PushMatrix
+    Translate 0 0 -3
+    Quad 3 "blue"
+PopMatrix
+
+#Back Wall
+PushMatrix
+    Translate 0 0 15
+    Quad 20 "cage"
+PopMatrix
+
+#Right Wall
+PushMatrix
+    Translate 3 0 0
+    Rotate 90 0 1 0
+    Quad 3 "green"
+PopMatrix
+
+#Left Wall
+PushMatrix
+    Translate -3 0 0
+    Rotate -90 0 1 0
+    Quad 3 "red"
+PopMatrix
+
+###############################################################################
+# Spécification pour une source de lumière :
+# La syntaxe basique est `PointLight x y z`, suivi par une liste de paramètres
+# (à partir de laquelle la classe PointLight récupère ses valeurs).
+
+#Lumière blanche
+SphericalLight 0 -0.5 0 # Position x y z
+    "emission" [0.6 0.6 0.6]    # Intensité [r g b]
+    "radius"  0.2                # Rayon = 0 -> Lumière Ponctuel, Rayon > 0 -> Lumière Spherique
+
+#Lumière verte
+SphericalLight 0 0 -2
+    "emission" [0 1 0]
+    "radius" 0
