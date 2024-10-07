@@ -2,13 +2,13 @@
 
 #include <vector>
 
-#include "float.h"
 #include "basic.h"
+#include "float.h"
 #include "linalg/linalg.h"
 using namespace linalg::aliases;
 
-class AABB{
-public:
+class AABB {
+   public:
     double3 min;
     double3 max;
 

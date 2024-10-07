@@ -2,20 +2,20 @@
 #include "object.h"
 
 class ResourceManager {
-  public:
+   public:
+    // Initialise l'instance
+    static ResourceManager* Instance();
 
-  // Initialise l'instance
-  static ResourceManager* Instance();
+    // Relâche l'instance
+    static void Release();
 
-  // Relâche l'instance
-  static void Release();
+    // Tous les différents matériaux sont conversés ici question de performance
+    std::map<std::string, Material> materials;
 
-  // Tous les différents matériaux sont conversés ici question de performance
-  std::map<std::string, Material> materials;
-private:
-  static ResourceManager* Instance_;
- 
-  ResourceManager();
+   private:
+    static ResourceManager* Instance_;
 
-  ~ResourceManager();
+    ResourceManager();
+
+    ~ResourceManager();
 };

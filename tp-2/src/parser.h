@@ -1,43 +1,30 @@
 #pragma once
 
-
-#include <climits>
-#include <deque>
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <map>
-#include <vector>
-#include <iostream>
-#include <cmath>
 #include <cfloat>
+#include <climits>
+#include <cmath>
+#include <deque>
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
 
-#include "bitmap_image/bitmap_image.h"
-#include "scene.h"
 #include "basic.h"
+#include "bitmap_image/bitmap_image.h"
 #include "container.h"
-
-#include "resource_manager.h"
-
 #include "linalg/linalg.h"
+#include "resource_manager.h"
+#include "scene.h"
 using namespace linalg::aliases;
 
 // Les différents types de token pouvant être lexés
-enum TokenType {
-    STRING,
-    NUMBER,
-    NAME,
-    ARRAY_BEGIN,
-    ARRAY_END,
-    END_OF_FILE,
-    ERROR
-};
-
+enum TokenType { STRING, NUMBER, NAME, ARRAY_BEGIN, ARRAY_END, END_OF_FILE, ERROR };
 
 // Une classe pour représenter un token qui a été lu
-class Token
-{
-public:
+class Token {
+   public:
     TokenType type;
 
     // Variables pour les différents types de données.
@@ -53,15 +40,12 @@ public:
     bool operator==(Token const &other) const;
 };
 
-
 // Permet l'écriture d'un token directement dans le flux de sortie.
-std::ostream& operator<<(std::ostream &out, Token const &token);
-
+std::ostream &operator<<(std::ostream &out, Token const &token);
 
 // La classe du lexer.
-class Lexer
-{
-public:
+class Lexer {
+   public:
     // Constructeur. Un flux d'entrée doit être fourni.
     Lexer(std::istream *input) : _input(input) {}
 
@@ -82,8 +66,7 @@ public:
 
     // Récupère une liste de nombres. Min/max font référence
     // à la taille requise de la liste.
-    std::vector<double> get_numbers(unsigned int min = 0,
-                                   unsigned int max = UINT_MAX);
+    std::vector<double> get_numbers(unsigned int min = 0, unsigned int max = UINT_MAX);
 
     // Récupère un unique nombre.
     double get_number();
@@ -93,10 +76,10 @@ public:
 
     // Récupère une liste de paramètres (i.e. strings mappés à des listes de nombres).
     // Min/max s'appliquent à chaque liste, tout comme get_numbers().
-    ParamList get_param_list(unsigned int min = 0,
-                           unsigned int max = UINT_MAX);
+    ParamList get_param_list(unsigned int min = 0, unsigned int max = UINT_MAX);
     bitmap_image get_bitmap();
-private:
+
+   private:
     // Le flux d'entrée.
     std::istream *_input;
 
@@ -107,35 +90,33 @@ private:
     std::deque<Token> _buffer;
 };
 
-
-class Parser
-{
-private:
-    Lexer lexer; // Le lexer utilisé pour séparer le fichier en tokens.
+class Parser {
+   private:
+    Lexer lexer;  // Le lexer utilisé pour séparer le fichier en tokens.
 
     std::vector<double4x4> transform_stack;  // Pile de transformations.
 
-    std::vector<Object*> objects;
+    std::vector<Object *> objects;
 
     // Les fonctions suivantes analysent toutes les commandes qui peuvent être
     // trouvées dans un fichier .ray.
 
-    //Meta argument pour la scene
+    // Meta argument pour la scene
     void parse_dimension();
     void parse_samples_per_pixel();
     void parse_jitter_radius();
     void parse_ambient_light();
     void parse_max_ray_depth();
 
-    //Argument pour la caméra
+    // Argument pour la caméra
     void parse_Perspective();
     void parse_LookAt();
     void parse_DOF();
 
-    //Argument pour les matériaux
+    // Argument pour les matériaux
     void parse_Material();
 
-    //Argument pour la création d'objet avec leur matrice de transformation.
+    // Argument pour la création d'objet avec leur matrice de transformation.
     void parse_PushMatrix();
     void parse_PopMatrix();
     void parse_Translate();
@@ -147,24 +128,24 @@ private:
     void parse_Cylinder();
     void parse_Mesh();
 
-    //Argument pour la création de lumière
+    // Argument pour la création de lumière
     void parse_SphericalLight();
 
     // Analyse les parties communes de chaque objet et met en place les objets dans la scène.
     void finish_object(Object *obj);
 
-public:
-    Scene scene; // La scène qui sera créée pendant l'analyse.
+   public:
+    Scene scene;  // La scène qui sera créée pendant l'analyse.
 
-    Parser(char const * filename) : lexer(new std::ifstream(filename)) {}
+    Parser(char const *filename) : lexer(new std::ifstream(filename)) {}
     Parser(std::istream *input) : lexer(input) {}
 
     ~Parser() {
-        if(!scene.container){
+        if (!scene.container) {
             delete scene.container;
         }
 
-        for(int iobj = 0; iobj < objects.size(); iobj++) {
+        for (int iobj = 0; iobj < objects.size(); iobj++) {
             delete objects[iobj];
         }
     }

@@ -1,59 +1,57 @@
 #include "parser.h"
 
-#define LEX_ERROR(error) { \
-    std::stringstream ss; \
-    ss << error; \
-    throw ss.str(); \
-}
-
+#define LEX_ERROR(error)      \
+    {                         \
+        std::stringstream ss; \
+        ss << error;          \
+        throw ss.str();       \
+    }
 
 bool Token::operator==(Token const& other) const {
     if (type != other.type) {
         return false;
     }
     switch (type) {
-    case NUMBER:
-        return number == other.number;
-    case STRING:
-    case NAME:
-        return string == other.string;
+        case NUMBER:
+            return number == other.number;
+        case STRING:
+        case NAME:
+            return string == other.string;
     }
     return true;
 }
 
 std::ostream& operator<<(std::ostream& out, Token const& token) {
     switch (token.type) {
-    case STRING:
-        out << "STRING:\"" << token.string << "\"";
-        break;
-    case NUMBER:
-        out << "NUMBER:" << token.number;
-        break;
-    case NAME:
-        out << "NAME:" << token.string;
-        break;
-    case ARRAY_BEGIN:
-        out << "ARRAY_BEGIN";
-        break;
-    case ARRAY_END:
-        out << "ARRAY_END";
-        break;
-    case END_OF_FILE:
-        out << "EOF";
-        break;
-    case ERROR:
-        out << "ERROR";
-        break;
-    default:
-        out << "UNKNOWN";
-        break;
+        case STRING:
+            out << "STRING:\"" << token.string << "\"";
+            break;
+        case NUMBER:
+            out << "NUMBER:" << token.number;
+            break;
+        case NAME:
+            out << "NAME:" << token.string;
+            break;
+        case ARRAY_BEGIN:
+            out << "ARRAY_BEGIN";
+            break;
+        case ARRAY_END:
+            out << "ARRAY_END";
+            break;
+        case END_OF_FILE:
+            out << "EOF";
+            break;
+        case ERROR:
+            out << "ERROR";
+            break;
+        default:
+            out << "UNKNOWN";
+            break;
     }
     return out;
 }
 
-
 Token Lexer::_process_stream(void) {
-
     // Handle immediate/error conditions.
     if (_input->eof()) {
         return Token(END_OF_FILE);
@@ -90,12 +88,12 @@ Token Lexer::_process_stream(void) {
 
     // Arrays.
     switch (c) {
-    case '[':
-        _input->ignore(1);
-        return Token(ARRAY_BEGIN);
-    case ']':
-        _input->ignore(1);
-        return Token(ARRAY_END);
+        case '[':
+            _input->ignore(1);
+            return Token(ARRAY_BEGIN);
+        case ']':
+            _input->ignore(1);
+            return Token(ARRAY_END);
     }
 
     // Strings.
@@ -106,12 +104,12 @@ Token Lexer::_process_stream(void) {
         while (!finished) {
             c = _input->get();
             switch (c) {
-            case '"':
-                finished = true;
-                break;
-                // TODO: handle escapes.
-            default:
-                value += c;
+                case '"':
+                    finished = true;
+                    break;
+                    // TODO: handle escapes.
+                default:
+                    value += c;
             }
         }
         return Token(STRING, value);
@@ -137,14 +135,12 @@ Token Lexer::_process_stream(void) {
     return Token(END_OF_FILE);
 }
 
-
 Token Lexer::peek(unsigned int index) {
     if (_buffer.size() <= index) {
         _buffer.push_back(_process_stream());
     }
     return _buffer[index];
 }
-
 
 Token Lexer::next() {
     if (!_buffer.size()) {
@@ -155,13 +151,11 @@ Token Lexer::next() {
     return token;
 }
 
-
 void Lexer::skip(unsigned int count) {
     for (unsigned int i = 0; i < count; i++) {
         next();
     }
 }
-
 
 std::string Lexer::get_name() {
     Token token = peek();
@@ -172,9 +166,7 @@ std::string Lexer::get_name() {
     return token.string;
 }
 
-
 std::vector<double> Lexer::get_numbers(unsigned int min, unsigned int max) {
-
     std::vector<double> values;
 
     bool is_array = peek().type == ARRAY_BEGIN;
@@ -184,25 +176,24 @@ std::vector<double> Lexer::get_numbers(unsigned int min, unsigned int max) {
 
     // UGLY HACK: Only here so we have something to `continue` to.
     do {
-
         Token token = next();
 
         switch (token.type) {
-        case NUMBER:
-            values.push_back(token.number);
-            if (!is_array) {
-                break;
-            }
-            continue;
+            case NUMBER:
+                values.push_back(token.number);
+                if (!is_array) {
+                    break;
+                }
+                continue;
 
-        case ARRAY_END:
+            case ARRAY_END:
 
-            if (is_array) {
-                break;
-            }
-            // falling through here
-        default:
-            LEX_ERROR("expected NUMBER; got " << token);
+                if (is_array) {
+                    break;
+                }
+                // falling through here
+            default:
+                LEX_ERROR("expected NUMBER; got " << token);
         }
 
         if (values.size() >= min && values.size() <= max) {
@@ -211,14 +202,9 @@ std::vector<double> Lexer::get_numbers(unsigned int min, unsigned int max) {
         LEX_ERROR("expected " << min << " to " << max << " NUMBERs; got " << values.size())
 
     } while (true);
-
 }
 
-
-double Lexer::get_number() {
-    return get_numbers(1, 1)[0];
-}
-
+double Lexer::get_number() { return get_numbers(1, 1)[0]; }
 
 std::string Lexer::get_string() {
     Token token = peek();
@@ -246,92 +232,87 @@ ParamList Lexer::get_param_list(unsigned int min, unsigned int max) {
         std::string key;
         try {
             key = get_string();
-        }
-        catch (std::string) {
+        } catch (std::string) {
             return map;
         }
         map[key] = get_numbers(min, max);
     }
 }
 
-
 bool Parser::parse() {
-
     transform_stack.push_back(linalg::identity);
 
     std::string container;
 
     while (true) {
-
         Token token = lexer.peek();
         switch (token.type) {
-        case END_OF_FILE:
-            if (container == "BVH") {
-                scene.container = new BVH(objects);
-            }
-            else if (container == "Naive") {
-                scene.container = new Naive(objects);
-            }
+            case END_OF_FILE:
+                if (container == "BVH") {
+                    scene.container = new BVH(objects);
+                } else if (container == "Naive") {
+                    scene.container = new Naive(objects);
+                }
 
-            return true;
-        case ERROR:
-            std::cerr << "parsing failed due to lexing error" << std::endl;
-            return false;
+                return true;
+            case ERROR:
+                std::cerr << "parsing failed due to lexing error" << std::endl;
+                return false;
         }
-
 
         std::string name;
         try {
             name = lexer.get_name();
-        }
-        catch (std::string e) {
+        } catch (std::string e) {
             std::cerr << "parsing failed to get next command due to: " << e << std::endl;
             return false;
         }
 
-#define HANDLE_NAME(_name) if (name == #_name) { parse_##_name(); continue; }
+#define HANDLE_NAME(_name) \
+    if (name == #_name) {  \
+        parse_##_name();   \
+        continue;          \
+    }
 
         try {
             HANDLE_NAME(dimension)
-                HANDLE_NAME(jitter_radius)
-                HANDLE_NAME(samples_per_pixel)
-                HANDLE_NAME(ambient_light)
-                HANDLE_NAME(max_ray_depth)
-                HANDLE_NAME(jitter_radius)
+            HANDLE_NAME(jitter_radius)
+            HANDLE_NAME(samples_per_pixel)
+            HANDLE_NAME(ambient_light)
+            HANDLE_NAME(max_ray_depth)
+            HANDLE_NAME(jitter_radius)
 
+            HANDLE_NAME(Perspective)
+            HANDLE_NAME(LookAt)
+            HANDLE_NAME(DOF)
 
-                HANDLE_NAME(Perspective)
-                HANDLE_NAME(LookAt)
-                HANDLE_NAME(DOF)
+            HANDLE_NAME(Material)
 
-                HANDLE_NAME(Material)
+            HANDLE_NAME(PushMatrix)
+            HANDLE_NAME(PopMatrix)
+            HANDLE_NAME(Translate)
+            HANDLE_NAME(Scale)
+            HANDLE_NAME(Rotate)
 
-                HANDLE_NAME(PushMatrix)
-                HANDLE_NAME(PopMatrix)
-                HANDLE_NAME(Translate)
-                HANDLE_NAME(Scale)
-                HANDLE_NAME(Rotate)
+            HANDLE_NAME(Sphere)
+            HANDLE_NAME(Quad)
+            HANDLE_NAME(Mesh)
+            HANDLE_NAME(Cylinder)
 
-                HANDLE_NAME(Sphere)
-                HANDLE_NAME(Quad)
-                HANDLE_NAME(Mesh)
-                HANDLE_NAME(Cylinder)
+            HANDLE_NAME(SphericalLight)
 
-                HANDLE_NAME(SphericalLight)
+            if (name == "container") {
+                container = lexer.get_string();
 
-                if (name == "container") {
-                    container = lexer.get_string();
-
-                    if (!(container == "BVH" || container == "Naive")) {
-                        std::cerr << "parsing failed due to unknown container \"" << container << "\"" << std::endl;
-                        return false;
-                    }
-
-                    continue;
+                if (!(container == "BVH" || container == "Naive")) {
+                    std::cerr << "parsing failed due to unknown container \"" << container << "\"" << std::endl;
+                    return false;
                 }
 
-        }
-        catch (std::string e) {
+                continue;
+            }
+
+        } catch (std::string e) {
             std::cerr << "parsing failed on command \"" << name << "\" due to: " << e << std::endl;
             return false;
         }
@@ -348,22 +329,16 @@ void Parser::parse_dimension() {
     scene.resolution[1] = static_cast<int>(lexer.get_number());
 }
 
-void Parser::parse_samples_per_pixel() {
-    scene.samples_per_pixel = lexer.get_number();
-}
+void Parser::parse_samples_per_pixel() { scene.samples_per_pixel = lexer.get_number(); }
 
-void Parser::parse_jitter_radius() {
-    scene.jitter_radius = lexer.get_number();
-}
+void Parser::parse_jitter_radius() { scene.jitter_radius = lexer.get_number(); }
 
 void Parser::parse_ambient_light() {
     std::vector<double> values = lexer.get_numbers(3, 3);
-    scene.ambient_light = { values[0],values[1],values[2] };
+    scene.ambient_light = {values[0], values[1], values[2]};
 }
 
-void Parser::parse_max_ray_depth() {
-    scene.max_ray_depth = static_cast<int>(lexer.get_number());
-}
+void Parser::parse_max_ray_depth() { scene.max_ray_depth = static_cast<int>(lexer.get_number()); }
 
 void Parser::parse_Perspective() {
     scene.camera.fovy = lexer.get_number();
@@ -371,7 +346,6 @@ void Parser::parse_Perspective() {
     scene.camera.z_near = lexer.get_number();
     scene.camera.z_far = lexer.get_number();
 }
-
 
 void Parser::parse_LookAt() {
     scene.camera.position[0] = lexer.get_number();
@@ -396,7 +370,6 @@ void Parser::parse_Material() {
     bitmap_image m = lexer.get_bitmap();
     ParamList params = lexer.get_param_list(1, 4);
     ResourceManager::Instance()->materials[name] = Material(m, params);
-
 }
 
 void Parser::parse_PopMatrix() {
@@ -406,11 +379,7 @@ void Parser::parse_PopMatrix() {
     }
 }
 
-
-void Parser::parse_PushMatrix() {
-    transform_stack.push_back(transform_stack.back());
-}
-
+void Parser::parse_PushMatrix() { transform_stack.push_back(transform_stack.back()); }
 
 void Parser::parse_Translate() {
     // Need to store these in variables because if we pass them directly to
@@ -418,9 +387,8 @@ void Parser::parse_Translate() {
     double x = lexer.get_number();
     double y = lexer.get_number();
     double z = lexer.get_number();
-    transform_stack.back() = mul(transform_stack.back(), linalg::translation_matrix(double3{ x, y, z }));
+    transform_stack.back() = mul(transform_stack.back(), linalg::translation_matrix(double3{x, y, z}));
 }
-
 
 void Parser::parse_Scale() {
     // Need to store these in variables because if we pass them directly to
@@ -428,9 +396,8 @@ void Parser::parse_Scale() {
     double x = lexer.get_number();
     double y = lexer.get_number();
     double z = lexer.get_number();
-    transform_stack.back() = mul(transform_stack.back(), linalg::scaling_matrix(double3{ x, y, z }));
+    transform_stack.back() = mul(transform_stack.back(), linalg::scaling_matrix(double3{x, y, z}));
 }
-
 
 void Parser::parse_Rotate() {
     // Need to store these in variables because if we pass them directly to
@@ -440,9 +407,9 @@ void Parser::parse_Rotate() {
     double y = lexer.get_number();
     double z = lexer.get_number();
 
-    transform_stack.back() = mul(transform_stack.back(), linalg::rotation_matrix(linalg::rotation_quat(double3{ x, y, z }, deg2rad(a))));
+    transform_stack.back() =
+        mul(transform_stack.back(), linalg::rotation_matrix(linalg::rotation_quat(double3{x, y, z}, deg2rad(a))));
 }
-
 
 void Parser::parse_Sphere() {
     double radius = lexer.get_number();
@@ -450,7 +417,6 @@ void Parser::parse_Sphere() {
     Sphere* obj = new Sphere(radius);
     finish_object(obj);
 }
-
 
 void Parser::parse_Quad() {
     double size = lexer.get_number();
@@ -463,13 +429,11 @@ void Parser::parse_Cylinder() {
     double radius = lexer.get_number();
     double height = lexer.get_number();
 
-
     Cylinder* obj = new Cylinder(radius, height);
     finish_object(obj);
 }
 
 void Parser::parse_Mesh() {
-
     std::cout << "Mesh: ";
 
     // First try to get a filename, and read an OBJ from it.
@@ -487,18 +451,15 @@ void Parser::parse_Mesh() {
         std::cout << obj->triangles.size() << " triangles" << std::endl;
 
         finish_object(obj);
-    }
-    catch (std::string e) {
+    } catch (std::string e) {
         // OK.
         std::cout << "Could not be parse :: " << e << std::endl;
     }
 
     // Normally this comes last, but we want the color on the front.
-
 }
 
 void Parser::finish_object(Object* obj) {
-
     // Get the material name, and make sure that material exists.
     std::string material_name = lexer.get_string();
     if (!ResourceManager::Instance()->materials.count(material_name)) {
