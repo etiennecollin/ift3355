@@ -1,13 +1,10 @@
 #!/bin/bash
 
-# Get the target from the first argument
-TARGET="aarch64-macos" # or x86_64-windows
-
 # Create the build directory if it doesn't exist
 mkdir -p build
 
 # Run cmake with the provided target
-cmake -S . -B build -DTARGET=$TARGET
+cmake -S . -B build
 
 # Check if cmake ran successfully
 if [ $? -eq 0 ]; then
