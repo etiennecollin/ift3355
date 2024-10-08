@@ -1,5 +1,7 @@
 #include "raytracer.h"
 
+#include "basic.h"
+
 void Raytracer::render(const Scene& scene, Frame* output) {
     // Crée le z_buffer.
     double* z_buffer = new double[scene.resolution[0] * scene.resolution[1]];
@@ -15,37 +17,37 @@ void Raytracer::render(const Scene& scene, Frame* output) {
     // supprimer les commentaires qui rendent inactive cette partie du code, et mettre en commentaires la boucle d’image
     // originale.
 
-    /*CameraOrthographic camOrth;
-    double3 uVec{ 0,1,0 };
-    double3 vVec{ 0,0,1 };
+    CameraOrthographic camOrth;
+    double3 uVec{0, 1, 0};
+    double3 vVec{0, 0, 1};
     double y_shift = 2.0 / scene.resolution[1];
     double x_shift = 2.0 / scene.resolution[0];
 
     for (int y = 0; y < scene.resolution[1]; y++) {
-            if (y % 40) {
-                    std::cout << "\rScanlines completed: " << y << "/" << scene.resolution[1] << '\r';
+        if (y % 40) {
+            std::cout << "\rScanlines completed: " << y << "/" << scene.resolution[1] << '\r';
+        }
+
+        for (int x = 0; x < scene.resolution[0]; x++) {
+            double3 color{0, 0, 0};
+
+            Intersection hit;
+            double3 rayOrigin = camOrth.minPosition + uVec * x_shift * x + vVec * y_shift * y;
+            double3 rayDirection{1, 0, 0};
+            Ray ray = Ray(rayOrigin, rayDirection);
+            double itHits = 0;
+
+            double z_depth = scene.camera.z_far;
+            if (scene.container->intersect(ray, EPSILON, z_depth, &hit)) {
+                Material& material = ResourceManager::Instance()->materials[hit.key_material];
+                color = material.color_albedo;
+                itHits = 1.0f;
             }
 
-            for (int x = 0; x < scene.resolution[0]; x++) {
-                    double3 color{ 0,0,0 };
-
-                    Intersection hit;
-                    double3 rayOrigin = camOrth.minPosition + uVec * x_shift * x + vVec * y_shift * y;
-                    double3 rayDirection{ 1,0,0 };
-                    Ray ray = Ray(rayOrigin, rayDirection);
-                    double itHits = 0;
-
-                    double z_depth = scene.camera.z_far;
-                    if (scene.container->intersect(ray, EPSILON, z_depth, &hit)) {
-                            Material& material = ResourceManager::Instance()->materials[hit.key_material];
-                            color = material.color_albedo;
-                            itHits = 1.0f;
-                    }
-
-                    output->set_color_pixel(x, y, color);
-                    output->set_depth_pixel(x, y, itHits);
-            }
-    }*/
+            output->set_color_pixel(x, y, color);
+            output->set_depth_pixel(x, y, itHits);
+        }
+    }
 
     //---------------------------------------------------------------------------------------------------------------
 
@@ -53,45 +55,71 @@ void Raytracer::render(const Scene& scene, Frame* output) {
     // Calculez les paramètres de la caméra pour les rayons.
 
     // Itère sur tous les pixels de l'image.
-    for (int y = 0; y < scene.resolution[1]; y++) {
-        if (y % 40) {
-            std::cout << "\rScanlines completed: " << y << "/" << scene.resolution[1] << '\r';
-        }
-
-        for (int x = 0; x < scene.resolution[0]; x++) {
-            int avg_z_depth = 0;
-            double3 avg_ray_color{0, 0, 0};
-
-            for (int iray = 0; iray < scene.samples_per_pixel; iray++) {
-                // Génère le rayon approprié pour ce pixel.
-                Ray ray;
-                // Initialise la profondeur de récursivité du rayon.
-                int ray_depth = 0;
-                // Initialize la couleur du rayon
-                double3 ray_color{0, 0, 0};
-
-                // @@@@@@ VOTRE CODE ICI
-                // Mettez en place le rayon primaire en utilisant les paramètres de la caméra.
-                // Lancez le rayon de manière uniformément aléatoire à l'intérieur du pixel dans la zone délimité par
-                // jitter_radius.
-                // Faites la moyenne des différentes couleurs obtenues suite à la récursion.
-            }
-
-            avg_z_depth = avg_z_depth / scene.samples_per_pixel;
-            avg_ray_color = avg_ray_color / scene.samples_per_pixel;
-
-            // Test de profondeur
-            if (avg_z_depth >= scene.camera.z_near && avg_z_depth <= scene.camera.z_far &&
-                avg_z_depth < z_buffer[x + y * scene.resolution[0]]) {
-                z_buffer[x + y * scene.resolution[0]] = avg_z_depth;
-
-                // Met à jour la couleur de l'image (et sa profondeur)
-                output->set_color_pixel(x, y, avg_ray_color);
-                output->set_depth_pixel(
-                    x, y, (avg_z_depth - scene.camera.z_near) / (scene.camera.z_far - scene.camera.z_near));
-            }
-        }
-    }
+    // for (int y = 0; y < scene.resolution[1]; y++) {
+    //     if (y % 40) {
+    //         std::cout << "\rScanlines completed: " << y << "/" << scene.resolution[1] << '\r';
+    //     }
+    //
+    //     for (int x = 0; x < scene.resolution[0]; x++) {
+    //         int avg_z_depth = 0;
+    //         double3 avg_ray_color{0, 0, 0};
+    //
+    //         for (int iray = 0; iray < scene.samples_per_pixel; iray++) {
+    //             // Génère le rayon approprié pour ce pixel.
+    //             Ray ray;
+    //             // Initialise la profondeur de récursivité du rayon.
+    //             int ray_depth = 0;
+    //             // Initialize la couleur du rayon
+    //             double3 ray_color{0, 0, 0};
+    //             // Initialize the hit and its depth
+    //             Intersection hit;
+    //             double ray_hit_depth = 0;
+    //
+    //             // @@@@@@ VOTRE CODE ICI
+    //             // Mettez en place le rayon primaire en utilisant les paramètres de la caméra.
+    //             // Lancez le rayon de manière uniformément aléatoire à l'intérieur du pixel dans la zone délimité par
+    //             // jitter_radius.
+    //
+    //             // TODO: Verify if this is correct
+    //             // Initialize the ray origin
+    //             // We give it a random jitter between 0 and jitter_radius and
+    //             // place it on the pixel (x, y) next to the camera position
+    //             double2 camera_position = scene.camera.position.xy();
+    //             double2 jitter = rand_double2();
+    //             float origin_x = camera_position.x + x + jitter.x * scene.jitter_radius;
+    //             float origin_y = camera_position.y + y + jitter.y * scene.jitter_radius;
+    //             float origin_z = scene.camera.z_near;
+    //             ray.origin = {origin_x, origin_y, origin_z};
+    //
+    //             // Initialize ray direction randomly
+    //             // TODO: Verify if this is correct
+    //             double3 ray_direction = {rand_double(), rand_double(), rand_double()};
+    //             // Normalize the direction
+    //             ray.direction = normalize(ray_direction);
+    //
+    //             // Trace the ray
+    //             trace(scene, ray, ray_depth, &ray_color, &ray_hit_depth);
+    //
+    //             // Add the color and depth to the averages
+    //             avg_ray_color += ray_color;
+    //             avg_z_depth += ray_hit_depth;
+    //         }
+    //
+    //         avg_z_depth = avg_z_depth / scene.samples_per_pixel;
+    //         avg_ray_color = avg_ray_color / scene.samples_per_pixel;
+    //
+    //         // Test de profondeur
+    //         if (avg_z_depth >= scene.camera.z_near && avg_z_depth <= scene.camera.z_far &&
+    //             avg_z_depth < z_buffer[x + y * scene.resolution[0]]) {
+    //             z_buffer[x + y * scene.resolution[0]] = avg_z_depth;
+    //
+    //             // Met à jour la couleur de l'image (et sa profondeur)
+    //             output->set_color_pixel(x, y, avg_ray_color);
+    //             output->set_depth_pixel(
+    //                 x, y, (avg_z_depth - scene.camera.z_near) / (scene.camera.z_far - scene.camera.z_near));
+    //         }
+    //     }
+    // }
 
     delete[] z_buffer;
 }
