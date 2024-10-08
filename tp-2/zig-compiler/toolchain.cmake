@@ -1,7 +1,8 @@
 include_guard()
 
+set(ZIG_TARGET "aarch64-macos")
 if(NOT ZIG_TARGET MATCHES "^([a-zZ-Z0-9_]+)-([a-zZ-Z0-9_]+)$")
-    message(FATAL_ERROR "Expected -DZIG_TARGET=<arch>-<os>")
+    message(FATAL_ERROR "Expected ZIG_TARGET=<arch>-<os>")
 endif()
 
 set(ZIG_ARCH ${CMAKE_MATCH_1})
@@ -21,9 +22,13 @@ set(CMAKE_SYSTEM_VERSION 1)
 set(CMAKE_SYSTEM_PROCESSOR ${ZIG_ARCH})
 
 
-set(CMAKE_C_COMPILER zig cc --target ${ZIG_TARGET})
-set(CMAKE_CXX_COMPILER zig c++ --target ${ZIG_TARGET})
+set(CMAKE_C_COMPILER zig cc)
+set(CMAKE_CXX_COMPILER zig c++)
+set(CMAKE_C_COMPILER_TARGET ${ZIG_TARGET})
+set(CMAKE_CXX_COMPILER_TARGET ${ZIG_TARGET})
+
 set(CMAKE_AR "${CMAKE_CURRENT_LIST_DIR}/zig_ar.sh")
 set(CMAKE_RANLIB "${CMAKE_CURRENT_LIST_DIR}/zig_ranlib.sh")
 set(CMAKE_RC "${CMAKE_CURRENT_LIST_DIR}/zig_rc.sh")
 
+message(STATUS "Toolchain configured for ${ZIG_TARGET}")
