@@ -5,6 +5,3 @@ services:
     container_name: "ift3355"
     volumes:
       - ".:/workspace"
-    stdin_open: true # Keep stdin open for interactive work
-    tty: true # Allocate a pseudo-TTY
-    command: "/bin/bash" # Start bash to keep the container running
