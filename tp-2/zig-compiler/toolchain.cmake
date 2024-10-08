@@ -1,12 +1,13 @@
 include_guard()
 
-set(ZIG_TARGET "aarch64-macos")
-if(NOT ZIG_TARGET MATCHES "^([a-zZ-Z0-9_]+)-([a-zZ-Z0-9_]+)$")
-    message(FATAL_ERROR "Expected ZIG_TARGET=<arch>-<os>")
+set(ZIG_TARGET "aarm64-macos-none")
+if(NOT ZIG_TARGET MATCHES "^([a-zZ-Z0-9_]+)-([a-zZ-Z0-9_]+)-([a-zZ-Z0-9_]+)$")
+    message(FATAL_ERROR "Expected ZIG_TARGET=<arch>-<os>-<abi>")
 endif()
 
 set(ZIG_ARCH ${CMAKE_MATCH_1})
 set(ZIG_OS ${CMAKE_MATCH_2})
+set(ZIG_ABI ${CMAKE_MATCH_3})
 
 if(ZIG_OS STREQUAL "linux")
     set(CMAKE_SYSTEM_NAME "Linux")
