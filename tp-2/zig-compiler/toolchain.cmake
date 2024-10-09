@@ -1,5 +1,7 @@
 include_guard()
 
+message(STATUS "Setting toolchain for macOS compilation. Make sure `zig` and `gcc` are installed from homebrew.")
+
 # Run the brew command to get the prefix for GCC
 execute_process(
     COMMAND brew --prefix gcc
