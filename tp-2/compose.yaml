@@ -1,7 +1,0 @@
----
-services:
-  ift3355:
-    image: "etiennecollin/ift3355-macos-compilation"
-    container_name: "ift3355"
-    volumes:
-      - ".:/workspace"
