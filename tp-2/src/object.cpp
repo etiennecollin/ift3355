@@ -22,7 +22,17 @@ AABB Sphere::compute_aabb() { return Object::compute_aabb(); }
 // Référez-vous au PDF pour la paramétrisation des coordonnées UV.
 //
 // Pour plus de d'informations sur la géométrie, référez-vous à la classe object.h.
-bool Quad::local_intersect(Ray ray, double t_min, double t_max, Intersection *hit) { return false; }
+bool Quad::local_intersect(Ray ray, double t_min, double t_max, Intersection *hit) {
+    // 1. Trouver le plan du quad
+    // 2. Trouver l'intersection du rayon avec le plan
+    // 3. Vérifier si l'intersection est dans le quad
+    // 4. Calculer les coordonnées UV
+    // 5. Calculer la normale
+    // 6. Remplir la structure Intersection
+    // 7. Retourner vrai
+
+    return false;
+}
 
 // @@@@@@ VOTRE CODE ICI
 // Occupez-vous de compléter cette fonction afin de calculer le AABB pour le quad (rectangle).
