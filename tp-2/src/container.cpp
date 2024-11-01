@@ -28,8 +28,8 @@ bool Naive::intersect(Ray ray, double t_min, double t_max, Intersection* hit) {
             // Detect intersection with geometry
             if (objects[i]->intersect(ray, t_min, t_max, &local_hit)) {
                 // Only update hit if it is the first hit or if it is closer
-                // than the previous hit
-                if (i == 0 || local_hit.depth < hit->depth) {
+                // than the previous hit and is not behind the camera
+                if ((i == 0 || local_hit.depth < hit->depth) && local_hit.depth >= 0) {
                     did_hit = true;
                     hit = &local_hit;
                 }
