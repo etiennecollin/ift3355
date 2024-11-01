@@ -6,3 +6,4 @@ src/bitmap_image
 zig-out
 lib
 zig
+data/output
