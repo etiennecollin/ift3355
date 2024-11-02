@@ -14,7 +14,7 @@ bool Sphere::local_intersect(Ray ray, double t_min, double t_max, Intersection *
     double a =
         ray.direction.x * ray.direction.x + ray.direction.y * ray.direction.y + ray.direction.z * ray.direction.z;
     double b = 2 * (ray.origin.x * ray.direction.x + ray.origin.y * ray.direction.y + ray.origin.z * ray.direction.z);
-    double c = ray.origin.x * ray.origin.x + ray.origin.y * ray.origin.y + ray.origin.z * ray.origin.z - 1;
+    double c = ray.origin.x * ray.origin.x + ray.origin.y * ray.origin.y + ray.origin.z * ray.origin.z - this->radius;
 
     // Check if the discriminant is negative
     double root = b * b - 4 * a * c;
