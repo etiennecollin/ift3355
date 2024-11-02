@@ -11,10 +11,9 @@ int rsign(double value, double v0, double v1) { return (int(std::signbit(value))
 // Pour plus de d'informations sur la géométrie, référez-vous à la classe object.h.
 bool Sphere::local_intersect(Ray ray, double t_min, double t_max, Intersection *hit) {
     // Calculate the terms of the quadratic equation
-    double a =
-        ray.direction.x * ray.direction.x + ray.direction.y * ray.direction.y + ray.direction.z * ray.direction.z;
+    double a = pow(ray.direction.x, 2) + pow(ray.direction.y, 2) + pow(ray.direction.z, 2);
     double b = 2 * (ray.origin.x * ray.direction.x + ray.origin.y * ray.direction.y + ray.origin.z * ray.direction.z);
-    double c = ray.origin.x * ray.origin.x + ray.origin.y * ray.origin.y + ray.origin.z * ray.origin.z - this->radius;
+    double c = pow(ray.origin.x, 2) + pow(ray.origin.y, 2) + pow(ray.origin.z, 2) - pow(this->radius, 2);
 
     // Check if the discriminant is negative
     double root = b * b - 4 * a * c;
