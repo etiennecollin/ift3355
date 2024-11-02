@@ -207,9 +207,9 @@ double3 Raytracer::shade(const Scene& scene, Intersection hit) {
         SphericalLight light = scene.lights[i];
 
         // Compute some important distances and directions
-        double hit_light_distance = linalg::length(light.position - hit.position);
-        double3 hit_light_direction = linalg::normalize(light.position - hit.position);
-        double3 hit_camera_direction = linalg::normalize(scene.camera.position - hit.position);
+        double hit_light_distance = length(light.position - hit.position);
+        double3 hit_light_direction = normalize(light.position - hit.position);
+        double3 hit_camera_direction = normalize(scene.camera.position - hit.position);
 
         // Check if the point is in shadow
         // If the light is directional
@@ -267,14 +267,14 @@ double3 Raytracer::shade(const Scene& scene, Intersection hit) {
         }
 
         // Pre-compute the N dot L product
-        double n_dot_l = fmax(0, linalg::dot(hit.normal, hit_light_direction));
+        double n_dot_l = fmax(0, dot(hit.normal, hit_light_direction));
 
         // Compute the reflected light direction
         double3 reflected_light_direction = 2 * n_dot_l * hit.normal - hit_light_direction;
 
         // Pre-compute the N dot H product for Blinn
-        double3 h = linalg::normalize(hit_light_direction + hit_camera_direction);
-        double n_dot_h = fmax(0, linalg::dot(hit.normal, h));
+        double3 h = normalize(hit_light_direction + hit_camera_direction);
+        double n_dot_h = fmax(0, dot(hit.normal, h));
 
         // Select albedo
         if (mat.texture_albedo.width() != 0 && mat.texture_albedo.height() != 0) {
