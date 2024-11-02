@@ -5,8 +5,6 @@
 // Source: Pete Shirley's blog, 2016/02/14
 // https://psgraphics.blogspot.com/2016/02/new-simple-ray-box-test-from-andrew.html
 bool AABB::intersect(Ray ray, double t_min, double t_max) {
-    // std::vector<double3> corners = retrieve_corners(*this);
-
     // If we are within the min and max for all x, y, z coordinates, we are inside the AABB
     // Check all 3 dimensions
     for (int i = 0; i < 3; i++) {
