@@ -105,8 +105,10 @@ bool Quad::local_intersect(Ray ray, double t_min, double t_max, Intersection *hi
 
     hit->depth = t;
     hit->key_material = this->key_material;
-    hit->normal = double3{0, 0, 1};
     hit->position = intersection;
+
+    // The nomal of the hit should be z on the same direction as the ray
+    hit->normal = ray.direction.z > 0 ? double3{0, 0, -1} : double3{0, 0, 1};
 
     return true;
 }
