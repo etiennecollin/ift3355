@@ -57,7 +57,7 @@ void Raytracer::render(const Scene& scene, Frame* output) {
     double pixel_size_y = 2 * screen_top_offset / scene.resolution[1];
 
     // Get the world coordinates of the top left corner of the screen
-    double3 screen_tl_position = scene.camera.position - (screen_left_offset + pixel_size_x / 2) * RIGHT +
+    double3 screen_tl_position = scene.camera.position - (screen_left_offset + pixel_size_x / 2) * RIGHT -
                                  (screen_top_offset - pixel_size_y / 2) * scene.camera.up +
                                  scene.camera.z_near * CENTER;
 
@@ -79,7 +79,7 @@ void Raytracer::render(const Scene& scene, Frame* output) {
                 // Compute the pixel position
                 double3 x_offset = x * pixel_size_x * RIGHT;
                 double3 y_offset = y * pixel_size_y * scene.camera.up;
-                double3 pixel_position = screen_tl_position + x_offset - y_offset;
+                double3 pixel_position = screen_tl_position + x_offset + y_offset;
                 double3 ray_direction = pixel_position - scene.camera.position;
 
                 // Add a random jitter to the direction
@@ -94,10 +94,6 @@ void Raytracer::render(const Scene& scene, Frame* output) {
                 double ray_hit_depth = scene.camera.z_far;
                 int ray_depth = 0;
                 double3 ray_color{0, 0, 0};
-
-                if (x == 320 && y == 240) {
-                    int lol = 1;
-                }
 
                 // Trace the ray
                 trace(scene, ray, ray_depth, &ray_color, &ray_hit_depth);
@@ -186,13 +182,11 @@ void Raytracer::trace(const Scene& scene, Ray ray, int ray_depth, double3* out_c
 // Veuillez remplir les objectifs suivants:
 //     * Calculer la contribution des lumières dans la scène.
 //         - Itérer sur toutes les lumières.
-//             - Inclure la contribution spéculaire selon le modèle de Blinn en incluant la composante
-// métallique.
+//             - Inclure la contribution spéculaire selon le modèle de Blinn en incluant la composante métallique.
 //             - Inclure la contribution diffuse. (Faites attention au produit scalare. >= 0)
 //         - Inclure la contribution ambiante
 //     * Calculer si le point est dans l'ombre
-//         - Itérer sur tous les objets et détecter si le rayon entre l'intersection et la lumière est
-// occludé.
+//         - Itérer sur tous les objets et détecter si le rayon entre l'intersection et la lumière est occludé.
 //             - Ne pas considérer les points plus loins que la lumière.
 //         - Par la suite, intégrer la pénombre dans votre calcul
 //     * Déterminer la couleur du point d'intersection.
@@ -200,7 +194,97 @@ void Raytracer::trace(const Scene& scene, Ray ray, int ray_depth, double3* out_c
 //         - Si aucune texture, prendre la couleur associé au matériel.
 
 double3 Raytracer::shade(const Scene& scene, Intersection hit) {
-    // Material& material = ResourceManager::Instance()->materials[hit.key_material]; lorsque vous serez rendu à la
-    // partie texture.
-    return double3{255, 0, 0};
+    Material& mat = ResourceManager::Instance()->materials[hit.key_material];
+
+    // Iterate on all lights
+    double3 light_sum = {0, 0, 0};
+    for (int i = 0; i < scene.lights.size(); i++) {
+        SphericalLight light = scene.lights[i];
+
+        // Compute some important distances and directions
+        double hit_light_distance = linalg::length(light.position - hit.position);
+        double3 hit_light_direction = linalg::normalize(light.position - hit.position);
+        double3 hit_camera_direction = linalg::normalize(scene.camera.position - hit.position);
+
+        // Check if the point is in shadow
+        // If the light is directional
+        double occlusion_factor = 1;
+        if (light.radius == 0) {
+            // Throw a ray from the hit point to the light
+            // If it intersects an object, the point is in shadow
+            Intersection shadow_hit;
+            Ray shadow_ray = Ray{hit.position, hit_light_direction};
+            if (scene.container->intersect(shadow_ray, EPSILON, hit_light_distance, &shadow_hit)) {
+                continue;
+            }
+        } else {
+            // Set the number of rays to cast within the cone
+            int num_shadow_rays = scene.samples_per_pixel;
+            int rays_reaching_light = 0;
+
+            // Calculate the cone angle using the light radius and distance to the intersection point
+            double cone_angle = atan2(light.radius, hit_light_distance);
+
+            // Define the coordinate system for the cone
+            double3 u, v;
+            // Make sure the cone axis is not parallel to the up
+            if (fabs(hit_light_direction.x) > 0.1) {
+                u = normalize(cross({0, 1, 0}, hit_light_direction));
+            } else {
+                u = normalize(cross({1, 0, 0}, hit_light_direction));
+            }
+            v = cross(hit_light_direction, u);
+
+            // Cast multiple rays within the cone
+            for (int j = 0; j < num_shadow_rays; j++) {
+                // Sample a random point in the unit disk for cone sampling
+                double2 disk_sample = random_in_unit_disk();
+
+                // Map the disk sample to the cone angle
+                double sample_x = disk_sample.x * sin(cone_angle);
+                double sample_y = disk_sample.y * sin(cone_angle);
+                double sample_z = cos(cone_angle);
+
+                // Convert the sample to world space using the cone basis
+                double3 sample_direction = normalize(sample_x * u + sample_y * v + sample_z * hit_light_direction);
+
+                // Cast a shadow ray from hit point in the sampled direction
+                Ray shadow_ray = Ray{hit.position, sample_direction};
+                Intersection shadow_hit;
+                if (scene.container->intersect(shadow_ray, EPSILON, hit_light_distance, &shadow_hit)) {
+                    continue;
+                }
+                rays_reaching_light++;
+            }
+
+            // Compute the occlusion factor as the ratio of rays reaching the light
+            occlusion_factor = static_cast<double>(rays_reaching_light) / num_shadow_rays;
+        }
+
+        // Pre-compute the N dot L product
+        double n_dot_l = fmax(0, linalg::dot(hit.normal, hit_light_direction));
+
+        // Compute the reflected light direction
+        double3 reflected_light_direction = 2 * n_dot_l * hit.normal - hit_light_direction;
+
+        // Pre-compute the N dot H product for Blinn
+        double3 h = linalg::normalize(hit_light_direction + hit_camera_direction);
+        double n_dot_h = fmax(0, linalg::dot(hit.normal, h));
+
+        // Get the diffuse contribution
+        double3 diffuse = mat.k_diffuse * mat.color_albedo * n_dot_l;
+
+        // Get the specular contribution
+        double3 specular =
+            mat.k_specular * ((1 - mat.metallic) * mat.color_albedo + mat.metallic) * pow(n_dot_h, mat.shininess);
+
+        // Add the contribution to the total
+        light_sum += occlusion_factor * (light.emission / pow(hit_light_distance, 2)) * (diffuse + specular);
+    }
+
+    // Get the ambient contribution
+    double3 ambient = scene.ambient_light * mat.k_ambient * mat.color_albedo;
+
+    // Return the final color
+    return ambient + light_sum;
 }
