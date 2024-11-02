@@ -9,14 +9,6 @@ void Raytracer::render(const Scene& scene, Frame* output) {
         z_buffer[i] = scene.camera.z_far;  // Anciennement DBL_MAX. À remplacer avec la valeur de scene.camera.z_far
     }
 
-    //---------------------------------------------------------------------------------------------------------------
-    // Nous vous fournissons ci-bas du code pour une caméra orthographique très simple. Cette caméra peut être utilisée
-    // pour tester l’intersection avec la sphère. Vous devez utiliser la scène de test portho.ray pour utiliser cette
-    // caméra. Notez que votre code de caméra ne doit pas être basé sur ce code de caméra. Ce code n’est là que pour
-    // prendre en compte le développement initial du test d’intersection. Pour utiliser cette caméra, vous devez
-    // supprimer les commentaires qui rendent inactive cette partie du code, et mettre en commentaires la boucle d’image
-    // originale.
-
     // CameraOrthographic camOrth;
     // double3 uVec{0, 1, 0};
     // double3 vVec{0, 0, 1};
@@ -52,15 +44,15 @@ void Raytracer::render(const Scene& scene, Frame* output) {
     //---------------------------------------------------------------------------------------------------------------
 
     // Calculez les paramètres de la caméra pour les rayons.
+    double3 CENTER = normalize(scene.camera.center - scene.camera.position);
+    double3 RIGHT = normalize(cross(CENTER, scene.camera.up));
+
     double screen_top = tan(deg2rad(scene.camera.fovy / 2)) * scene.camera.z_near;
     double screen_left = screen_top * scene.camera.aspect;
     double pixel_size_x = 2 * screen_left / scene.resolution[0];
     double pixel_size_y = 2 * screen_top / scene.resolution[1];
-    double3 screen_tl_position = {scene.camera.position.x - screen_left, scene.camera.position.y + screen_top,
-                                  scene.camera.z_near};
-
-    double3 CENTER = normalize(scene.camera.center - scene.camera.position);
-    double3 RIGHT = normalize(cross(CENTER, scene.camera.up));
+    double3 screen_tl_position = scene.camera.position - (screen_left + pixel_size_x / 2) * RIGHT +
+                                 (screen_top - pixel_size_y / 2) * scene.camera.up + scene.camera.z_near * CENTER;
 
     // Itère sur tous les pixels de l'image.
     for (int y = 0; y < scene.resolution[1]; y++) {
@@ -76,11 +68,6 @@ void Raytracer::render(const Scene& scene, Frame* output) {
                 Ray ray;
                 ray.origin = scene.camera.position;
 
-                // @@@@@@ VOTRE CODE ICI
-                // Mettez en place le rayon primaire en utilisant les paramètres de la caméra.
-                // Lancez le rayon de manière uniformément aléatoire à l'intérieur du pixel dans la zone délimité par
-                // jitter_radius.
-
                 // Compute the pixel position
                 double3 x_offset = x * pixel_size_x * RIGHT;
                 double3 y_offset = y * pixel_size_y * scene.camera.up;
@@ -88,10 +75,8 @@ void Raytracer::render(const Scene& scene, Frame* output) {
                 double3 ray_direction = pixel_position - scene.camera.position;
 
                 // Add a random jitter to the direction
-                // TODO: Jitter should be from middle of pixel
-                ray_direction.x += rand_double() * scene.jitter_radius;
-                ray_direction.y += rand_double() * scene.jitter_radius;
-                // ray_direction.z += rand_double() * scene.jitter_radius;
+                ray_direction.x += (rand_double() - 0.5) * 2 * scene.jitter_radius * pixel_size_x;
+                ray_direction.y += (rand_double() - 0.5) * 2 * scene.jitter_radius * pixel_size_y;
 
                 // Normalize the direction
                 ray.direction = normalize(ray_direction);
@@ -103,7 +88,7 @@ void Raytracer::render(const Scene& scene, Frame* output) {
                 double3 ray_color{0, 0, 0};
 
                 if (x == 320 && y == 240) {
-                    std::cout << "Hello World";
+                    int lol = 1;
                 }
 
                 // Trace the ray
