@@ -138,38 +138,42 @@ void Raytracer::trace(const Scene& scene, Ray ray, int ray_depth, double3* out_c
     // Fait appel à l'un des containers spécifiées.
     if (scene.container->intersect(ray, EPSILON, *out_z_depth, &hit)) {
         Material mat = ResourceManager::Instance()->materials[hit.key_material];
-        double3 reflected_color;
-        double3 refracted_color;
+        double3 reflected_color = {0, 0, 0};
+        double3 refracted_color = {0, 0, 0};
 
         // Limit the number of rays
         if (ray_depth < scene.max_ray_depth) {
-            // Compute the dot product once as it is used multiple times
-            double dot = linalg::dot(hit.normal, ray.direction);
+            double dot_product;
+            double3 incident_direction = -ray.direction;
+            if (mat.k_reflection != 0 || mat.k_refraction != 0) {
+                // Compute the dot product once as it is used multiple times
+                dot_product = dot(hit.normal, incident_direction);
+            }
+            if (mat.k_reflection != 0) {
+                // Compute direction of reflected ray
+                double3 reflected_direction = normalize(2 * dot_product * hit.normal - incident_direction);
 
-            // Compute direction of reflected ray
-            double3 reflected_direction = linalg::normalize(2 * dot * hit.normal - ray.direction);
+                // Reflected ray starts at hit and goes in the reflected direction
+                Ray reflected_ray = Ray(hit.position, reflected_direction);
+                // Trace the reflected ray
+                trace(scene, reflected_ray, ray_depth + 1, &reflected_color, out_z_depth);
+            }
+            if (mat.k_refraction != 0) {
+                // We assume the air/outside has a refractive index of 1
+                // All geometry are surfaces and do not have a volume
+                double eta = mat.refractive_index;
 
-            // Reflected ray starts at hit and goes in the reflected direction
-            Ray reflected_ray = Ray(hit.position, reflected_direction);
+                // Compute the direction of the refracted ray
+                double3 refracted_direction =
+                    normalize(hit.normal * (eta * dot_product - sqrt(1 - pow(eta, 2) * (1 - pow(dot_product, 2)))) -
+                              eta * incident_direction);
 
-            // Trace the reflected ray
-            trace(scene, reflected_ray, ray_depth + 1, out_color, out_z_depth);
-            reflected_color = *out_color;
+                // Refracted ray starts at hit and goes in the refracted direction
+                Ray refracted_ray = Ray(hit.position, refracted_direction);
 
-            // We assume the air/outside has a refractive index of 1
-            // All geometry are surfaces and do not have a volume
-            double eta = mat.refractive_index;
-
-            // Compute the direction of the refracted ray
-            double3 refracted_direction = linalg::normalize(
-                hit.normal * (eta * dot - sqrt(1 - eta * eta * (1 - dot * dot))) - eta * ray.direction);
-
-            // Refracted ray starts at hit and goes in the refracted direction
-            Ray refracted_ray = Ray(hit.position, refracted_direction);
-
-            // Trace the refracted ray
-            trace(scene, reflected_ray, ray_depth + 1, out_color, out_z_depth);
-            refracted_color = *out_color;
+                // Trace the refracted ray
+                trace(scene, refracted_ray, ray_depth + 1, &refracted_color, out_z_depth);
+            }
         }
 
         // Get the final color and depth
@@ -296,4 +300,5 @@ double3 Raytracer::shade(const Scene& scene, Intersection hit) {
 
     // Return the final color
     return ambient + light_sum;
+    // return hit.normal;
 }
