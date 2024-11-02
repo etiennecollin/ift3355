@@ -47,8 +47,8 @@ bool Sphere::local_intersect(Ray ray, double t_min, double t_max, Intersection *
 
     hit->depth = t;
     hit->key_material = this->key_material;
-    hit->normal = linalg::normalize(hit->position);
     hit->position = ray.origin + ray.direction * t;
+    hit->normal = normalize(hit->position);
 
     return true;
 }
