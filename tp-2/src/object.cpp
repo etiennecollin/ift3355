@@ -23,8 +23,9 @@ bool Sphere::local_intersect(Ray ray, double t_min, double t_max, Intersection *
 
     // Get the two intersections
     root = sqrt(root);
-    double t_p = (-b + root) / (2 * a);
-    double t_m = (-b - root) / (2 * a);
+    double division = 1 / (2 * a);
+    double t_p = (-b + root) * division;
+    double t_m = (-b - root) * division;
 
     // Check if both intersections are behind the camera
     if (t_p < 0 && t_m < 0) {
@@ -80,6 +81,11 @@ AABB Sphere::compute_aabb() {
 //
 // Pour plus de d'informations sur la géométrie, référez-vous à la classe object.h.
 bool Quad::local_intersect(Ray ray, double t_min, double t_max, Intersection *hit) {
+    // Quick check if the ray is parallel to the xy plane
+    if (ray.direction.z == 0) {
+        return false;
+    }
+
     // Compute x intersection of ray with xy plane
     double t = (-ray.origin.z) / ray.direction.z;
 
@@ -130,39 +136,101 @@ AABB Cylinder::compute_aabb() { return Object::compute_aabb(); }
 //
 // Pour plus de d'informations sur la géométrie, référez-vous à la classe object.h.
 //
-bool Mesh::local_intersect(Ray ray, double t_min, double t_max, Intersection *hit) { return false; }
+bool Mesh::local_intersect(Ray ray, double t_min, double t_max, Intersection *hit) {
+    bool did_hit = false;
+    // Iterate over every triangle
+    for (int i = 0; i < this->triangles.size(); i++) {
+        Intersection local_hit;
+        // Check if the ray intersects the triangle
+        if (intersect_triangle(ray, t_min, t_max, this->triangles[i], &local_hit)) {
+            if (i == 0 || local_hit.depth < hit->depth) {
+                did_hit = true;
+                *hit = local_hit;
+            }
+        }
+    }
+
+    return did_hit;
+}
 
 // @@@@@@ VOTRE CODE ICI
 // Occupez-vous de compléter cette fonction afin de trouver l'intersection avec un triangle.
 // S'il y a intersection, remplissez hit avec l'information sur la normale et les coordonnées texture.
+//
 bool Mesh::intersect_triangle(Ray ray, double t_min, double t_max, Triangle const tri, Intersection *hit) {
-    // Extrait chaque position de sommet des données du maillage.
-    double3 const &p0 = positions[tri[0].pi];  // ou Sommet A (Pour faciliter les explications)
-    double3 const &p1 = positions[tri[1].pi];  // ou Sommet B
-    double3 const &p2 = positions[tri[2].pi];  // ou Sommet C
+    // Compute the edges of the triangle
+    double3 const &p0 = positions[tri[0].pi];
+    double3 const &p1 = positions[tri[1].pi];
+    double3 const &p2 = positions[tri[2].pi];
+    double3 edge_1 = p1 - p0;
+    double3 edge_2 = p2 - p0;
 
-    // Triangle en question. Respectez la convention suivante pour vos variables.
-    //
-    //     A
-    //    / \
-	//   /   \
-	//  B --> C
-    //
-    // Respectez la règle de la main droite pour la normale.
+    // Convert to uvw coordinates
+    // =========================================================================
+    // Source: Möller–Trumbore Intersection Algorithm
+    // https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
+    // =========================================================================
+    double3 ray_cross_edge = cross(ray.direction, edge_2);
+    double similarity = dot(edge_1, ray_cross_edge);
 
-    // @@@@@@ VOTRE CODE ICI
-    // Décidez si le rayon intersecte le triangle (p0,p1,p2).
-    // Si c'est le cas, remplissez la structure hit avec les informations
-    // de l'intersection et renvoyez true.
-    // Pour plus de d'informations sur la géométrie, référez-vous à la classe dans object.hpp.
-    //
-    // NOTE : hit.depth est la profondeur de l'intersection actuellement la plus proche,
-    // donc n'acceptez pas les intersections qui occurent plus loin que cette valeur.
+    // If the ray is parallel to the triangle, the dot product between the ray and the normal will be 0
+    if (similarity == 0) {
+        return false;
+    }
 
-    return false;
+    // Precompute the division
+    double division = 1 / similarity;
+
+    // Compute the u parameter
+    double3 point_ray_direction = ray.origin - p0;
+    float u = dot(point_ray_direction, ray_cross_edge) * division;
+
+    // If u is not within 0 and 1, the intersection is outside the triangle
+    if (u < 0 || u > 1) {
+        return false;
+    }
+
+    // Compute the v parameter
+    double3 point_ray_cross_edge = cross(point_ray_direction, edge_1);
+    double v = dot(ray.direction, point_ray_cross_edge) * division;
+
+    // Check again if the intersection is outside the triangle
+    if (v < 0 || u + v > 1) {
+        return false;
+    }
+
+    // Get the intersection
+    double t = dot(edge_2, point_ray_cross_edge) * division;
+    // =========================================================================
+    // End of Möller–Trumbore Intersection Algorithm
+    // =========================================================================
+
+    // Check if the intersection is within bounds
+    if (t < t_min || t > t_max || t > hit->depth) {
+        return false;
+    }
+
+    hit->depth = t;
+    hit->position = ray.origin + t * ray.direction;
+
+    double w = 1 - u - v;
+
+    // Interpolate the normal
+    double3 const &n0 = normals[tri[0].ni];
+    double3 const &n1 = normals[tri[1].ni];
+    double3 const &n2 = normals[tri[2].ni];
+    hit->normal = normalize(w * n0 + u * n1 + v * n2);
+
+    // Interpolate the uv coordinates for texture mapping
+    double2 const &tex0 = tex_coords[tri[0].ti];
+    double2 const &tex1 = tex_coords[tri[1].ti];
+    double2 const &tex2 = tex_coords[tri[2].ti];
+    hit->uv = w * tex0 + u * tex1 + v * tex2;
+
+    return true;
 }
 
 // @@@@@@ VOTRE CODE ICI
 // Occupez-vous de compléter cette fonction afin de calculer le AABB pour le Mesh.
 // Il faut que le AABB englobe minimalement notre objet à moins que l'énoncé prononce le contraire.
-AABB Mesh::compute_aabb() { return Object::compute_aabb(); }
+AABB Mesh::compute_aabb() { return construct_aabb(positions); }
