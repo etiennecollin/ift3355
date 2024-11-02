@@ -9,7 +9,46 @@ int rsign(double value, double v0, double v1) { return (int(std::signbit(value))
 // Référez-vous au PDF pour la paramétrisation des coordonnées UV.
 //
 // Pour plus de d'informations sur la géométrie, référez-vous à la classe object.h.
-bool Sphere::local_intersect(Ray ray, double t_min, double t_max, Intersection *hit) { return false; }
+bool Sphere::local_intersect(Ray ray, double t_min, double t_max, Intersection *hit) {
+    // Calculate the terms of the quadratic equation
+    double a = pow(ray.direction.x, 2) + pow(ray.direction.y, 2) + pow(ray.direction.z, 2);
+    double b = 2 * (ray.origin.x * ray.direction.x + ray.origin.y * ray.direction.y + ray.origin.z * ray.direction.z);
+    double c = pow(ray.origin.x, 2) + pow(ray.origin.y, 2) + pow(ray.origin.z, 2) - pow(this->radius, 2);
+
+    // Check if the discriminant is negative
+    double root = b * b - 4 * a * c;
+    if (root < 0) return false;
+
+    // Get the two intersections
+    root = sqrt(root);
+    double t_p = (-b + root) / (2 * a);
+    double t_m = (-b - root) / (2 * a);
+
+    // Check if both intersections are behind the camera
+    if (t_p < 0 && t_m < 0) {
+        return false;
+    }
+
+    // Get the closest intersection
+    double t;
+    if (t_p < 0 || t_m < 0) {
+        t = fmax(t_p, t_m);
+    } else {
+        t = fmin(t_p, t_m);
+    }
+
+    // Check if the intersection is within the depth
+    if (t < t_min || t > t_max) {
+        return false;
+    }
+
+    hit->depth = t;
+    hit->position = ray.origin + ray.direction * t;
+    hit->key_material = this->key_material;
+    hit->normal = linalg::normalize(hit->position);
+
+    return true;
+}
 
 // @@@@@@ VOTRE CODE ICI
 // Occupez-vous de compléter cette fonction afin de calculer le AABB pour la sphère.
@@ -22,7 +61,17 @@ AABB Sphere::compute_aabb() { return Object::compute_aabb(); }
 // Référez-vous au PDF pour la paramétrisation des coordonnées UV.
 //
 // Pour plus de d'informations sur la géométrie, référez-vous à la classe object.h.
-bool Quad::local_intersect(Ray ray, double t_min, double t_max, Intersection *hit) { return false; }
+bool Quad::local_intersect(Ray ray, double t_min, double t_max, Intersection *hit) {
+    // 1. Trouver le plan du quad
+    // 2. Trouver l'intersection du rayon avec le plan
+    // 3. Vérifier si l'intersection est dans le quad
+    // 4. Calculer les coordonnées UV
+    // 5. Calculer la normale
+    // 6. Remplir la structure Intersection
+    // 7. Retourner vrai
+
+    return false;
+}
 
 // @@@@@@ VOTRE CODE ICI
 // Occupez-vous de compléter cette fonction afin de calculer le AABB pour le quad (rectangle).
