@@ -17,109 +17,118 @@ void Raytracer::render(const Scene& scene, Frame* output) {
     // supprimer les commentaires qui rendent inactive cette partie du code, et mettre en commentaires la boucle d’image
     // originale.
 
-    CameraOrthographic camOrth;
-    double3 uVec{0, 1, 0};
-    double3 vVec{0, 0, 1};
-    double y_shift = 2.0 / scene.resolution[1];
-    double x_shift = 2.0 / scene.resolution[0];
-
-    for (int y = 0; y < scene.resolution[1]; y++) {
-        if (y % 40) {
-            std::cout << "\rScanlines completed: " << y << "/" << scene.resolution[1] << '\r';
-        }
-
-        for (int x = 0; x < scene.resolution[0]; x++) {
-            double3 color{0, 0, 0};
-
-            Intersection hit;
-            double3 rayOrigin = camOrth.minPosition + uVec * x_shift * x + vVec * y_shift * y;
-            double3 rayDirection{1, 0, 0};
-            Ray ray = Ray(rayOrigin, rayDirection);
-            double itHits = 0;
-
-            double z_depth = scene.camera.z_far;
-            if (scene.container->intersect(ray, EPSILON, z_depth, &hit)) {
-                Material& material = ResourceManager::Instance()->materials[hit.key_material];
-                color = material.color_albedo;
-                itHits = 1.0f;
-            }
-
-            output->set_color_pixel(x, y, color);
-            output->set_depth_pixel(x, y, itHits);
-        }
-    }
-
-    //---------------------------------------------------------------------------------------------------------------
-
-    // @@@@@@ VOTRE CODE ICI
-    // Calculez les paramètres de la caméra pour les rayons.
-
-    // Itère sur tous les pixels de l'image.
+    // CameraOrthographic camOrth;
+    // double3 uVec{0, 1, 0};
+    // double3 vVec{0, 0, 1};
+    // double y_shift = 2.0 / scene.resolution[1];
+    // double x_shift = 2.0 / scene.resolution[0];
+    //
     // for (int y = 0; y < scene.resolution[1]; y++) {
     //     if (y % 40) {
     //         std::cout << "\rScanlines completed: " << y << "/" << scene.resolution[1] << '\r';
     //     }
     //
     //     for (int x = 0; x < scene.resolution[0]; x++) {
-    //         int avg_z_depth = 0;
-    //         double3 avg_ray_color{0, 0, 0};
+    //         double3 color{0, 0, 0};
     //
-    //         for (int iray = 0; iray < scene.samples_per_pixel; iray++) {
-    //             // Génère le rayon approprié pour ce pixel.
-    //             Ray ray;
-    //             // Initialise la profondeur de récursivité du rayon.
-    //             int ray_depth = 0;
-    //             // Initialize la couleur du rayon
-    //             double3 ray_color{0, 0, 0};
-    //             // Initialize the hit and its depth
-    //             Intersection hit;
-    //             double ray_hit_depth = 0;
+    //         Intersection hit;
+    //         double3 rayOrigin = camOrth.minPosition + uVec * x_shift * x + vVec * y_shift * y;
+    //         double3 rayDirection{1, 0, 0};
+    //         Ray ray = Ray(rayOrigin, rayDirection);
+    //         double itHits = 0;
     //
-    //             // @@@@@@ VOTRE CODE ICI
-    //             // Mettez en place le rayon primaire en utilisant les paramètres de la caméra.
-    //             // Lancez le rayon de manière uniformément aléatoire à l'intérieur du pixel dans la zone délimité par
-    //             // jitter_radius.
-    //
-    //             // TODO: Verify if this is correct
-    //             // Initialize the ray origin
-    //             // We give it a random jitter between 0 and jitter_radius and
-    //             // place it on the pixel (x, y) next to the camera position
-    //             double2 camera_position = scene.camera.position.xy();
-    //             double2 jitter = rand_double2();
-    //             float origin_x = camera_position.x + x + jitter.x * scene.jitter_radius;
-    //             float origin_y = camera_position.y + y + jitter.y * scene.jitter_radius;
-    //             float origin_z = scene.camera.z_near;
-    //             ray.origin = {origin_x, origin_y, origin_z};
-    //
-    //             // Initialize ray direction randomly
-    //             // TODO: Verify if this is correct
-    //             double3 ray_direction = {rand_double(), rand_double(), rand_double()};
-    //             // Normalize the direction
-    //             ray.direction = normalize(ray_direction);
-    //
-    //             // Trace the ray
-    //             trace(scene, ray, ray_depth, &ray_color, &ray_hit_depth);
-    //
-    //             // Add the color and depth to the averages
-    //             avg_ray_color += ray_color;
-    //             avg_z_depth += ray_hit_depth;
+    //         double z_depth = scene.camera.z_far;
+    //         if (scene.container->intersect(ray, EPSILON, z_depth, &hit)) {
+    //             Material& material = ResourceManager::Instance()->materials[hit.key_material];
+    //             color = material.color_albedo;
+    //             itHits = 1.0f;
     //         }
     //
-    //         avg_z_depth = avg_z_depth / scene.samples_per_pixel;
-    //         avg_ray_color = avg_ray_color / scene.samples_per_pixel;
-    //
-    //         // Test de profondeur
-    //         if (avg_z_depth >= scene.camera.z_near && avg_z_depth <= scene.camera.z_far &&
-    //             avg_z_depth < z_buffer[x + y * scene.resolution[0]]) {
-    //             z_buffer[x + y * scene.resolution[0]] = avg_z_depth;
-    //
-    //             // Met à jour la couleur de l'image (et sa profondeur)
-    //             output->set_color_pixel(x, y, avg_ray_color);
-    //             output->set_depth_pixel(
-    //                 x, y, (avg_z_depth - scene.camera.z_near) / (scene.camera.z_far - scene.camera.z_near));
-    //         }
+    //         output->set_color_pixel(x, y, color);
+    //         output->set_depth_pixel(x, y, itHits);
     //     }
     // }
+
+    //---------------------------------------------------------------------------------------------------------------
+
+    // Calculez les paramètres de la caméra pour les rayons.
+    double screen_top = tan(deg2rad(scene.camera.fovy / 2)) * scene.camera.z_near;
+    double screen_left = screen_top * scene.camera.aspect;
+    double pixel_size_x = 2 * screen_left / scene.resolution[0];
+    double pixel_size_y = 2 * screen_top / scene.resolution[1];
+    double3 screen_tl_position = {scene.camera.position.x - screen_left, scene.camera.position.y + screen_top,
+                                  scene.camera.z_near};
+
+    double3 CENTER = normalize(scene.camera.center - scene.camera.position);
+    double3 RIGHT = normalize(cross(CENTER, scene.camera.up));
+
+    // Itère sur tous les pixels de l'image.
+    for (int y = 0; y < scene.resolution[1]; y++) {
+        if (y % 40) {
+            std::cout << "\rScanlines completed: " << y << "/" << scene.resolution[1] << '\r';
+        }
+        for (int x = 0; x < scene.resolution[0]; x++) {
+            int avg_z_depth = 0;
+            double3 avg_ray_color{0, 0, 0};
+
+            for (int iray = 0; iray < scene.samples_per_pixel; iray++) {
+                // Initialize ray
+                Ray ray;
+                ray.origin = scene.camera.position;
+
+                // @@@@@@ VOTRE CODE ICI
+                // Mettez en place le rayon primaire en utilisant les paramètres de la caméra.
+                // Lancez le rayon de manière uniformément aléatoire à l'intérieur du pixel dans la zone délimité par
+                // jitter_radius.
+
+                // Compute the pixel position
+                double3 x_offset = x * pixel_size_x * RIGHT;
+                double3 y_offset = y * pixel_size_y * scene.camera.up;
+                double3 pixel_position = screen_tl_position + x_offset - y_offset;
+                double3 ray_direction = pixel_position - scene.camera.position;
+
+                // Add a random jitter to the direction
+                // TODO: Jitter should be from middle of pixel
+                ray_direction.x += rand_double() * scene.jitter_radius;
+                ray_direction.y += rand_double() * scene.jitter_radius;
+                // ray_direction.z += rand_double() * scene.jitter_radius;
+
+                // Normalize the direction
+                ray.direction = normalize(ray_direction);
+
+                // Initialize the tracing
+                Intersection hit;
+                double ray_hit_depth = scene.camera.z_far;
+                int ray_depth = 0;
+                double3 ray_color{0, 0, 0};
+
+                if (x == 320 && y == 240) {
+                    std::cout << "Hello World";
+                }
+
+                // Trace the ray
+                trace(scene, ray, ray_depth, &ray_color, &ray_hit_depth);
+
+                // Add the color and depth to the averages
+                avg_ray_color += ray_color;
+                avg_z_depth += ray_hit_depth;
+            }
+
+            avg_z_depth = avg_z_depth / scene.samples_per_pixel;
+            avg_ray_color = avg_ray_color / scene.samples_per_pixel;
+
+            // Test de profondeur
+            if (avg_z_depth >= scene.camera.z_near && avg_z_depth <= scene.camera.z_far &&
+                avg_z_depth < z_buffer[x + y * scene.resolution[0]]) {
+                z_buffer[x + y * scene.resolution[0]] = avg_z_depth;
+
+                // Met à jour la couleur de l'image (et sa profondeur)
+                output->set_color_pixel(x, y, avg_ray_color);
+                output->set_depth_pixel(
+                    x, y, (avg_z_depth - scene.camera.z_near) / (scene.camera.z_far - scene.camera.z_near));
+            }
+        }
+    }
 
     delete[] z_buffer;
 }
@@ -138,27 +147,43 @@ void Raytracer::trace(const Scene& scene, Ray ray, int ray_depth, double3* out_c
     Intersection hit;
     // Fait appel à l'un des containers spécifiées.
     if (scene.container->intersect(ray, EPSILON, *out_z_depth, &hit)) {
-        // Get shader of hit
+        Material mat = ResourceManager::Instance()->materials[hit.key_material];
+        double3 reflected_color;
+        double3 refracted_color;
 
-        // @@@@@@ VOTRE CODE ICI
-        // Déterminer la couleur associée à la réflection d'un rayon de manière récursive.
+        // Limit the number of rays
+        if (ray_depth < scene.max_ray_depth) {
+            // Compute the dot product once as it is used multiple times
+            double dot = linalg::dot(hit.normal, ray.direction);
 
-        // Calculer l'angle de réflexion
-        // TODO
-        trace(scene, ray, ray_depth + 1, out_color, out_z_depth);
+            // Compute direction of reflected ray
+            double3 reflected_direction = linalg::normalize(2 * dot * hit.normal - ray.direction);
 
-        // @@@@@@ VOTRE CODE ICI
-        // Déterminer la couleur associée à la réfraction d'un rayon de manière récursive.
-        //
-        // Assumez que l'extérieur/l'air a un indice de réfraction de 1.
-        //
-        // Toutes les géométries sont des surfaces et non pas de volumes.
+            // Reflected ray starts at hit and goes in the reflected direction
+            Ray reflected_ray = Ray(hit.position, reflected_direction);
 
-        // Calculer l'angle de réfraction
-        // TODO
-        trace(scene, ray, ray_depth + 1, out_color, out_z_depth);
+            // Trace the reflected ray
+            trace(scene, reflected_ray, ray_depth + 1, out_color, out_z_depth);
+            reflected_color = *out_color;
 
-        *out_color = shade(scene, hit);
+            // We assume the air/outside has a refractive index of 1
+            // All geometry are surfaces and do not have a volume
+            double eta = mat.refractive_index;
+
+            // Compute the direction of the refracted ray
+            double3 refracted_direction = linalg::normalize(
+                hit.normal * (eta * dot - sqrt(1 - eta * eta * (1 - dot * dot))) - eta * ray.direction);
+
+            // Refracted ray starts at hit and goes in the refracted direction
+            Ray refracted_ray = Ray(hit.position, refracted_direction);
+
+            // Trace the refracted ray
+            trace(scene, reflected_ray, ray_depth + 1, out_color, out_z_depth);
+            refracted_color = *out_color;
+        }
+
+        // Get the final color and depth
+        *out_color = shade(scene, hit) + mat.k_reflection * reflected_color + mat.k_refraction * refracted_color;
         *out_z_depth = hit.depth;
     }
 }
