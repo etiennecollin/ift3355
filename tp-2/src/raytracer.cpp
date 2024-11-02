@@ -43,18 +43,25 @@ void Raytracer::render(const Scene& scene, Frame* output) {
 
     //---------------------------------------------------------------------------------------------------------------
 
-    // Calculez les paramètres de la caméra pour les rayons.
+    // Get the center and right vectors which point in the direction of the camera view and the right of the camera
+    // respectively.
     double3 CENTER = normalize(scene.camera.center - scene.camera.position);
     double3 RIGHT = normalize(cross(CENTER, scene.camera.up));
 
-    double screen_top = tan(deg2rad(scene.camera.fovy / 2)) * scene.camera.z_near;
-    double screen_left = screen_top * scene.camera.aspect;
-    double pixel_size_x = 2 * screen_left / scene.resolution[0];
-    double pixel_size_y = 2 * screen_top / scene.resolution[1];
-    double3 screen_tl_position = scene.camera.position - (screen_left + pixel_size_x / 2) * RIGHT +
-                                 (screen_top - pixel_size_y / 2) * scene.camera.up + scene.camera.z_near * CENTER;
+    // Get the offset of the top left corner of the screen
+    double screen_top_offset = tan(deg2rad(scene.camera.fovy / 2)) * scene.camera.z_near;
+    double screen_left_offset = screen_top_offset * scene.camera.aspect;
 
-    // Itère sur tous les pixels de l'image.
+    // Get the size of a pixel in the screen space
+    double pixel_size_x = 2 * screen_left_offset / scene.resolution[0];
+    double pixel_size_y = 2 * screen_top_offset / scene.resolution[1];
+
+    // Get the world coordinates of the top left corner of the screen
+    double3 screen_tl_position = scene.camera.position - (screen_left_offset + pixel_size_x / 2) * RIGHT +
+                                 (screen_top_offset - pixel_size_y / 2) * scene.camera.up +
+                                 scene.camera.z_near * CENTER;
+
+    // Iterate on all pixels
     for (int y = 0; y < scene.resolution[1]; y++) {
         if (y % 40) {
             std::cout << "\rScanlines completed: " << y << "/" << scene.resolution[1] << '\r';
@@ -63,6 +70,7 @@ void Raytracer::render(const Scene& scene, Frame* output) {
             int avg_z_depth = 0;
             double3 avg_ray_color{0, 0, 0};
 
+            // Generate multiple samples per pixel
             for (int iray = 0; iray < scene.samples_per_pixel; iray++) {
                 // Initialize ray
                 Ray ray;
@@ -99,15 +107,16 @@ void Raytracer::render(const Scene& scene, Frame* output) {
                 avg_z_depth += ray_hit_depth;
             }
 
+            // Compute the average color and depth
             avg_z_depth = avg_z_depth / scene.samples_per_pixel;
             avg_ray_color = avg_ray_color / scene.samples_per_pixel;
 
-            // Test de profondeur
+            // Test if depth is valid
             if (avg_z_depth >= scene.camera.z_near && avg_z_depth <= scene.camera.z_far &&
                 avg_z_depth < z_buffer[x + y * scene.resolution[0]]) {
                 z_buffer[x + y * scene.resolution[0]] = avg_z_depth;
 
-                // Met à jour la couleur de l'image (et sa profondeur)
+                // Update the pixel color and depth
                 output->set_color_pixel(x, y, avg_ray_color);
                 output->set_depth_pixel(
                     x, y, (avg_z_depth - scene.camera.z_near) / (scene.camera.z_far - scene.camera.z_near));
