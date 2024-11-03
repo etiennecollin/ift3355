@@ -184,30 +184,26 @@ bool Cylinder::local_intersect(Ray ray, double t_min, double t_max, Intersection
     }
 
     // Get the closest valid intersection
+    double3 hit_position_tp = ray.origin + ray.direction * t_p;
+    double3 hit_position_tm = ray.origin + ray.direction * t_m;
+
+    bool is_tp_valid = (t_p > 0 && t_p >= t_min && t_p < t_max && hit_position_tp.y >= -this->half_height &&
+                        hit_position_tp.y <= this->half_height);
+    bool is_tm_valid = (t_m > 0 && t_m >= t_min && t_m < t_max && hit_position_tm.y >= -this->half_height &&
+                        hit_position_tm.y <= this->half_height);
+
     double t;
     double3 intersection;
-    if (t_p <= 0 || t_m <= 0) {
-        t = fmax(t_p, t_m);
+    if (is_tp_valid && is_tm_valid) {
+        // Both intersections are within bounds, take the closest one
+        t = fmin(t_p, t_m);
+        intersection = (t == t_p) ? hit_position_tp : hit_position_tm;
+    } else if (is_tp_valid || is_tm_valid) {
+        // Only one of the intersections is within bounds, take the valid one
+        t = is_tp_valid ? t_p : t_m;
+        intersection = is_tp_valid ? hit_position_tp : hit_position_tm;
     } else {
-        double3 hit_position_tp = ray.origin + ray.direction * t_p;
-        double3 hit_position_tm = ray.origin + ray.direction * t_m;
-
-        bool is_tp_valid = (t_p > t_min && t_p < t_max && hit_position_tp.y >= -this->half_height &&
-                            hit_position_tp.y <= this->half_height);
-        bool is_tm_valid = (t_m > t_min && t_m < t_max && hit_position_tm.y >= -this->half_height &&
-                            hit_position_tm.y <= this->half_height);
-
-        if (is_tp_valid && is_tm_valid) {
-            // Both intersections are within bounds, take the closer one
-            t = fmin(t_p, t_m);
-            intersection = (t == t_p) ? hit_position_tp : hit_position_tm;
-        } else if (is_tp_valid || is_tm_valid) {
-            // Only one of the intersections is within bounds, take the valid one
-            t = is_tp_valid ? t_p : t_m;
-            intersection = is_tp_valid ? hit_position_tp : hit_position_tm;
-        } else {
-            return false;
-        }
+        return false;
     }
 
     hit->depth = t;
