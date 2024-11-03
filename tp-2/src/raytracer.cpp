@@ -307,7 +307,7 @@ double3 Raytracer::shade(const Scene& scene, Intersection hit) {
         double3 diffuse = mat.k_diffuse * albedo * n_dot_l;
 
         // Get the specular contribution
-        double3 specular = mat.k_specular * ((1 - mat.metallic) * albedo + mat.metallic) * pow(n_dot_h, mat.shininess);
+        double3 specular = mat.k_specular * (mat.metallic * albedo + (1 - mat.metallic)) * pow(n_dot_h, mat.shininess);
 
         // Add the contribution to the total
         light_sum += occlusion_factor * (light.emission / pow(hit_light_distance, 2)) * (diffuse + specular);
