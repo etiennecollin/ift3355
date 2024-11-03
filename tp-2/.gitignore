@@ -7,3 +7,4 @@ zig-out
 lib
 zig
 data/output
+!data/assets/mesh/*.obj
