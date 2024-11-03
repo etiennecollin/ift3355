@@ -175,7 +175,7 @@ void Raytracer::trace(const Scene& scene, Ray ray, int ray_depth, double3* out_c
             if (mat.k_refraction != 0) {
                 // We assume the air/outside has a refractive index of 1
                 // All geometry are surfaces and do not have a volume
-                double eta = mat.refractive_index;
+                double eta = 1 / mat.refractive_index;
 
                 // Compute the direction of the refracted ray
                 double3 refracted_direction =
@@ -233,7 +233,7 @@ double3 Raytracer::shade(const Scene& scene, Intersection hit) {
             Intersection shadow_hit;
             Ray shadow_ray = Ray{hit.position, hit_light_direction};
             if (scene.container->intersect(shadow_ray, EPSILON, hit_light_distance, &shadow_hit)) {
-                continue;
+                occlusion_factor = 0;
             }
         } else {
             // Set the number of rays to cast within the cone
