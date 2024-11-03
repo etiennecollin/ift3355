@@ -48,8 +48,11 @@ void Raytracer::render(const Scene& scene, Frame* output) {
     double3 CENTER = normalize(scene.camera.center - scene.camera.position);
     double3 RIGHT = normalize(cross(CENTER, scene.camera.up));
 
+    // Screen is placed at z-near distance from the camera or at the focus distance if it is set
+    double screen_depth = scene.camera.focus_distance > 0 ? scene.camera.focus_distance : scene.camera.z_near;
+
     // Get the offset of the top left corner of the screen
-    double screen_top_offset = tan(deg2rad(scene.camera.fovy / 2)) * scene.camera.z_near;
+    double screen_top_offset = tan(deg2rad(scene.camera.fovy / 2)) * screen_depth;
     double screen_left_offset = screen_top_offset * scene.camera.aspect;
 
     // Get the size of a pixel in the screen space
@@ -57,9 +60,13 @@ void Raytracer::render(const Scene& scene, Frame* output) {
     double pixel_size_y = 2 * screen_top_offset / scene.resolution[1];
 
     // Get the world coordinates of the top left corner of the screen
-    double3 screen_tl_position = scene.camera.position - (screen_left_offset + pixel_size_x / 2) * RIGHT -
-                                 (screen_top_offset - pixel_size_y / 2) * scene.camera.up +
-                                 scene.camera.z_near * CENTER;
+    double3 screen_tl_position = scene.camera.position - (screen_left_offset - pixel_size_x / 2) * RIGHT -
+                                 (screen_top_offset - pixel_size_y / 2) * scene.camera.up + screen_depth * CENTER;
+
+    // Compute the angle between the defocus cone axis and side
+    double defocus_cone_angle = deg2rad(scene.camera.defocus_angle / 2);
+    // Compute the radius at the base of the cone
+    double defocus_radius = scene.camera.focus_distance * tan(defocus_cone_angle);
 
     // Iterate on all pixels
     for (int y = 0; y < scene.resolution[1]; y++) {
@@ -72,35 +79,26 @@ void Raytracer::render(const Scene& scene, Frame* output) {
 
             // Generate multiple samples per pixel
             for (int iray = 0; iray < scene.samples_per_pixel; iray++) {
-                // Compute the pixel position
-                double3 x_offset = x * pixel_size_x * RIGHT;
-                double3 y_offset = y * pixel_size_y * scene.camera.up;
-                double3 pixel_position = screen_tl_position + x_offset + y_offset;
-
-                // Add a random jitter to the pixel position
-                double3 focus_offset = {0, 0, 0};
-                if (scene.camera.defocus_angle != 0) {
-                    double cone_angle = deg2rad(scene.camera.defocus_angle / 2);
-                    // Compute the radius at the base of the cone
-                    double radius = scene.camera.focus_distance * tan(cone_angle);
-
-                    // Generate the random disk point
-                    double2 random_disk_point = random_in_unit_disk() * radius;
-
-                    // Compute the focus offset
-                    focus_offset = random_disk_point.x * RIGHT + random_disk_point.y * scene.camera.up;
-                }
-
                 // Initialize ray
                 Ray ray;
 
                 // Set the origin of the ray to the camera position with the focus offset
+                double3 focus_offset = {0, 0, 0};
+                if (scene.camera.defocus_angle > 0) {
+                    // Generate the random disk point and compute offset
+                    double2 random_disk_point = random_in_unit_disk() * defocus_radius;
+                    focus_offset = random_disk_point.x * RIGHT + random_disk_point.y * scene.camera.up;
+                }
                 ray.origin = scene.camera.position + focus_offset;
 
-                // Generate a ray direction with random jitter
+                // Compute the pixel position with a random jitter
+                double2 pixel_jitter = (rand_double2() - 0.5) * 2 * scene.jitter_radius;
+                double3 pixel_x_offset = (x + pixel_jitter.x) * pixel_size_x * RIGHT;
+                double3 pixel_y_offset = (y + pixel_jitter.y) * pixel_size_y * scene.camera.up;
+                double3 pixel_position = screen_tl_position + pixel_x_offset + pixel_y_offset;
+
+                // Compute the direction of the ray
                 double3 ray_direction = pixel_position - ray.origin;
-                ray_direction.x += (rand_double() - 0.5) * 2 * scene.jitter_radius * pixel_size_x;
-                ray_direction.y += (rand_double() - 0.5) * 2 * scene.jitter_radius * pixel_size_y;
                 ray.direction = normalize(ray_direction);
 
                 // Initialize the tracing
