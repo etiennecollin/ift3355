@@ -341,4 +341,12 @@ bool Mesh::intersect_triangle(Ray ray, double t_min, double t_max, Triangle cons
 // @@@@@@ VOTRE CODE ICI
 // Occupez-vous de compléter cette fonction afin de calculer le AABB pour le Mesh.
 // Il faut que le AABB englobe minimalement notre objet à moins que l'énoncé prononce le contraire.
-AABB Mesh::compute_aabb() { return construct_aabb(this->positions); }
+AABB Mesh::compute_aabb() {
+    std::vector<double3> positions = this->positions;
+
+    // Apply transformation to each position
+    for (int i = 0; i < positions.size(); i++) {
+        positions[i] = mul(this->transform, double4{positions[i], 1}).xyz();
+    }
+    return construct_aabb(positions);
+}
