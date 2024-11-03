@@ -72,21 +72,35 @@ void Raytracer::render(const Scene& scene, Frame* output) {
 
             // Generate multiple samples per pixel
             for (int iray = 0; iray < scene.samples_per_pixel; iray++) {
-                // Initialize ray
-                Ray ray;
-                ray.origin = scene.camera.position;
-
                 // Compute the pixel position
                 double3 x_offset = x * pixel_size_x * RIGHT;
                 double3 y_offset = y * pixel_size_y * scene.camera.up;
                 double3 pixel_position = screen_tl_position + x_offset + y_offset;
-                double3 ray_direction = pixel_position - scene.camera.position;
 
-                // Add a random jitter to the direction
+                // Add a random jitter to the pixel position
+                double3 focus_offset = {0, 0, 0};
+                if (scene.camera.defocus_angle != 0) {
+                    double cone_angle = deg2rad(scene.camera.defocus_angle / 2);
+                    // Compute the radius at the base of the cone
+                    double radius = scene.camera.focus_distance * tan(cone_angle);
+
+                    // Generate the random disk point
+                    double2 random_disk_point = random_in_unit_disk() * radius;
+
+                    // Compute the focus offset
+                    focus_offset = random_disk_point.x * RIGHT + random_disk_point.y * scene.camera.up;
+                }
+
+                // Initialize ray
+                Ray ray;
+
+                // Set the origin of the ray to the camera position with the focus offset
+                ray.origin = scene.camera.position + focus_offset;
+
+                // Generate a ray direction with random jitter
+                double3 ray_direction = pixel_position - ray.origin;
                 ray_direction.x += (rand_double() - 0.5) * 2 * scene.jitter_radius * pixel_size_x;
                 ray_direction.y += (rand_double() - 0.5) * 2 * scene.jitter_radius * pixel_size_y;
-
-                // Normalize the direction
                 ray.direction = normalize(ray_direction);
 
                 // Initialize the tracing
@@ -230,6 +244,7 @@ double3 Raytracer::shade(const Scene& scene, Intersection hit) {
             double cone_angle = atan2(light.radius, hit_light_distance);
 
             // Define the coordinate system for the cone
+            // u and v are perpendicular to the cone axis and each other
             double3 u, v;
             // Make sure the cone axis is not parallel to the up
             if (fabs(hit_light_direction.x) > 0.1) {
