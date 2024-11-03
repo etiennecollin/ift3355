@@ -167,6 +167,8 @@ void Raytracer::trace(const Scene& scene, Ray ray, int ray_depth, double3* out_c
 
                 // Reflected ray starts at hit and goes in the reflected direction
                 Ray reflected_ray = Ray(hit.position, reflected_direction);
+                reflected_ray.current_IOR = ray.current_IOR;
+
                 // Trace the reflected ray
                 trace(scene, reflected_ray, ray_depth + 1, &reflected_color, out_z_depth);
             }
