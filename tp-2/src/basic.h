@@ -35,4 +35,5 @@ class Ray {
 
     double3 origin;     // Origine du rayon
     double3 direction;  // Direction du rayon
+    double current_IOR = 1.0;
 };

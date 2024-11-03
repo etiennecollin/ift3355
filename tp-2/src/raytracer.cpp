@@ -171,9 +171,7 @@ void Raytracer::trace(const Scene& scene, Ray ray, int ray_depth, double3* out_c
                 trace(scene, reflected_ray, ray_depth + 1, &reflected_color, out_z_depth);
             }
             if (mat.k_refraction != 0) {
-                // We assume the air/outside has a refractive index of 1
-                // All geometry are surfaces and do not have a volume
-                double eta = 1 / mat.refractive_index;
+                double eta = ray.current_IOR / mat.refractive_index;
 
                 // Compute the direction of the refracted ray
                 double3 refracted_direction =
@@ -182,6 +180,7 @@ void Raytracer::trace(const Scene& scene, Ray ray, int ray_depth, double3* out_c
 
                 // Refracted ray starts at hit and goes in the refracted direction
                 Ray refracted_ray = Ray(hit.position, refracted_direction);
+                refracted_ray.current_IOR = mat.refractive_index;
 
                 // Trace the refracted ray
                 trace(scene, refracted_ray, ray_depth + 1, &refracted_color, out_z_depth);
