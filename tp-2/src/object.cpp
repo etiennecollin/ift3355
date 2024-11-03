@@ -18,7 +18,7 @@ bool Sphere::local_intersect(Ray ray, double t_min, double t_max, Intersection *
     double c = pow(ray.origin.x, 2) + pow(ray.origin.y, 2) + pow(ray.origin.z, 2) - pow(this->radius, 2);
 
     // Check if the discriminant is negative
-    double root = b * b - 4 * a * c;
+    double root = pow(b, 2) - 4 * a * c;
     if (root < 0) return false;
 
     // Get the two intersections
@@ -28,13 +28,13 @@ bool Sphere::local_intersect(Ray ray, double t_min, double t_max, Intersection *
     double t_m = (-b - root) * division;
 
     // Check if both intersections are behind the camera
-    if (t_p < 0 && t_m < 0) {
+    if (t_p <= 0 && t_m <= 0) {
         return false;
     }
 
     // Get the closest intersection
     double t;
-    if (t_p < 0 || t_m < 0) {
+    if (t_p <= 0 || t_m <= 0) {
         t = fmax(t_p, t_m);
     } else {
         t = fmin(t_p, t_m);
@@ -90,7 +90,7 @@ bool Quad::local_intersect(Ray ray, double t_min, double t_max, Intersection *hi
     double t = (-ray.origin.z) / ray.direction.z;
 
     // Check if the intersection is within the depth
-    if (t < t_min || t > t_max) {
+    if (t < t_min || t > t_max || t <= 0) {
         return false;
     }
 
@@ -116,7 +116,23 @@ bool Quad::local_intersect(Ray ray, double t_min, double t_max, Intersection *hi
 // @@@@@@ VOTRE CODE ICI
 // Occupez-vous de compléter cette fonction afin de calculer le AABB pour le quad (rectangle).
 // Il faut que le AABB englobe minimalement notre objet à moins que l'énoncé prononce le contraire.
-AABB Quad::compute_aabb() { return Object::compute_aabb(); }
+AABB Quad::compute_aabb() {
+    // Generate the 8 corners of the quad
+    double epsilon = 1e-6;
+
+    // Get the position of the quad
+    std::vector<double3> points = {
+        mul(this->transform, double4{this->half_size, this->half_size, epsilon, 1}).xyz(),
+        mul(this->transform, double4{this->half_size, -this->half_size, epsilon, 1}).xyz(),
+        mul(this->transform, double4{-this->half_size, this->half_size, epsilon, 1}).xyz(),
+        mul(this->transform, double4{-this->half_size, -this->half_size, epsilon, 1}).xyz(),
+        mul(this->transform, double4{this->half_size, this->half_size, -epsilon, 1}).xyz(),
+        mul(this->transform, double4{this->half_size, -this->half_size, -epsilon, 1}).xyz(),
+        mul(this->transform, double4{-this->half_size, this->half_size, -epsilon, 1}).xyz(),
+        mul(this->transform, double4{-this->half_size, -this->half_size, -epsilon, 1}).xyz(),
+    };
+    return construct_aabb(points);
+}
 
 // @@@@@@ VOTRE CODE ICI
 // Occupez-vous de compléter cette fonction afin de trouver l'intersection avec un cylindre.
@@ -124,12 +140,96 @@ AABB Quad::compute_aabb() { return Object::compute_aabb(); }
 // Référez-vous au PDF pour la paramétrisation des coordonnées UV.
 //
 // Pour plus de d'informations sur la géométrie, référez-vous à la classe object.h.
-bool Cylinder::local_intersect(Ray ray, double t_min, double t_max, Intersection *hit) { return false; }
+bool Cylinder::local_intersect(Ray ray, double t_min, double t_max, Intersection *hit) {
+    // Calculate the terms of the quadratic equation
+    double a = pow(ray.direction.x, 2) + pow(ray.direction.z, 2);
+    double b = 2 * (ray.origin.x * ray.direction.x + ray.origin.z * ray.direction.z);
+    double c = pow(ray.origin.x, 2) + pow(ray.origin.z, 2) - pow(this->radius, 2);
+
+    // ========================================================================
+    // Check if the discriminant is negative
+    double root = pow(b, 2) - 4 * a * c;
+    if (root < 0) return false;
+
+    // Get the two intersections
+    root = sqrt(root);
+    double division = 1 / (2 * a);
+    double t_p = (-b + root) * division;
+    double t_m = (-b - root) * division;
+
+    // Check if both intersections are behind the camera
+    if (t_p <= 0 && t_m <= 0) {
+        return false;
+    }
+
+    // Check if the intersections is within the depth
+    if ((t_p < t_min || t_p > t_max) && (t_m < t_min || t_m > t_max)) {
+        return false;
+    }
+
+    // Get the closest valid intersection
+    double t;
+    double3 hit_position;
+    if (t_p <= 0 || t_m <= 0) {
+        t = fmax(t_p, t_m);
+    } else {
+        double3 hit_position_tp = ray.origin + ray.direction * t_p;
+        double3 hit_position_tm = ray.origin + ray.direction * t_m;
+
+        bool is_tp_valid = (hit_position_tp.y >= -this->half_height && hit_position_tp.y <= this->half_height);
+        bool is_tm_valid = (hit_position_tm.y >= -this->half_height && hit_position_tm.y <= this->half_height);
+
+        if (is_tp_valid && is_tm_valid) {
+            // Both intersections are within bounds, take the closer one
+            t = fmin(t_p, t_m);
+            hit_position = (t == t_p) ? hit_position_tp : hit_position_tm;
+        } else if (is_tp_valid || is_tm_valid) {
+            // Only one of the intersections is within bounds, take the valid one
+            t = is_tp_valid ? t_p : t_m;
+            hit_position = is_tp_valid ? hit_position_tp : hit_position_tm;
+        } else {
+            return false;
+        }
+    }
+
+    // Check if the intersection is within the depth
+    if (t < t_min || t > t_max) {
+        return false;
+    }
+
+    hit->depth = t;
+    hit->position = hit_position;
+    hit->key_material = this->key_material;
+
+    // For a point on the cylinder surface, the normal is in the xz-plane
+    double3 normal = normalize(double3{hit_position.x, 0, hit_position.z});
+
+    // If the ray is hitting the inside of the cylinder, flip the normal to point outward
+    if (dot(ray.direction, normal) > 0) {
+        normal = -normal;
+    }
+    hit->normal = normal;
+
+    return true;
+}
 
 // @@@@@@ VOTRE CODE ICI
 // Occupez-vous de compléter cette fonction afin de calculer le AABB pour le cylindre.
 // Il faut que le AABB englobe minimalement notre objet à moins que l'énoncé prononce le contraire (comme ici).
-AABB Cylinder::compute_aabb() { return Object::compute_aabb(); }
+AABB Cylinder::compute_aabb() {
+    // Get 6 points on each side of the cylinder
+    std::vector<double3> points = {
+        mul(this->transform, double4{this->radius, this->half_height, this->radius, 1}).xyz(),
+        mul(this->transform, double4{this->radius, this->half_height, -this->radius, 1}).xyz(),
+        mul(this->transform, double4{this->radius, -this->half_height, this->radius, 1}).xyz(),
+        mul(this->transform, double4{this->radius, -this->half_height, -this->radius, 1}).xyz(),
+        mul(this->transform, double4{-this->radius, this->half_height, this->radius, 1}).xyz(),
+        mul(this->transform, double4{-this->radius, this->half_height, -this->radius, 1}).xyz(),
+        mul(this->transform, double4{-this->radius, -this->half_height, this->radius, 1}).xyz(),
+        mul(this->transform, double4{-this->radius, -this->half_height, -this->radius, 1}).xyz(),
+    };
+    return construct_aabb(points);
+}
 
 // @@@@@@ VOTRE CODE ICI
 // Occupez-vous de compléter cette fonction afin de trouver l'intersection avec un mesh.
@@ -161,9 +261,9 @@ bool Mesh::local_intersect(Ray ray, double t_min, double t_max, Intersection *hi
 //
 bool Mesh::intersect_triangle(Ray ray, double t_min, double t_max, Triangle const tri, Intersection *hit) {
     // Compute the edges of the triangle
-    double3 const &p0 = positions[tri[0].pi];
-    double3 const &p1 = positions[tri[1].pi];
-    double3 const &p2 = positions[tri[2].pi];
+    double3 const &p0 = this->positions[tri[0].pi];
+    double3 const &p1 = this->positions[tri[1].pi];
+    double3 const &p2 = this->positions[tri[2].pi];
     double3 edge_1 = p1 - p0;
     double3 edge_2 = p2 - p0;
 
@@ -208,7 +308,7 @@ bool Mesh::intersect_triangle(Ray ray, double t_min, double t_max, Triangle cons
     // =========================================================================
 
     // Check if the intersection is within bounds
-    if (t < t_min || t > t_max || t > hit->depth) {
+    if (t < t_min || t > t_max || t > hit->depth || t <= 0) {
         return false;
     }
 
@@ -218,15 +318,15 @@ bool Mesh::intersect_triangle(Ray ray, double t_min, double t_max, Triangle cons
     double w = 1 - u - v;
 
     // Interpolate the normal
-    double3 const &n0 = normals[tri[0].ni];
-    double3 const &n1 = normals[tri[1].ni];
-    double3 const &n2 = normals[tri[2].ni];
+    double3 const &n0 = this->normals[tri[0].ni];
+    double3 const &n1 = this->normals[tri[1].ni];
+    double3 const &n2 = this->normals[tri[2].ni];
     hit->normal = normalize(w * n0 + u * n1 + v * n2);
 
     // Interpolate the uv coordinates for texture mapping
-    double2 const &tex0 = tex_coords[tri[0].ti];
-    double2 const &tex1 = tex_coords[tri[1].ti];
-    double2 const &tex2 = tex_coords[tri[2].ti];
+    double2 const &tex0 = this->tex_coords[tri[0].ti];
+    double2 const &tex1 = this->tex_coords[tri[1].ti];
+    double2 const &tex2 = this->tex_coords[tri[2].ti];
     hit->uv = w * tex0 + u * tex1 + v * tex2;
 
     return true;
@@ -235,4 +335,4 @@ bool Mesh::intersect_triangle(Ray ray, double t_min, double t_max, Triangle cons
 // @@@@@@ VOTRE CODE ICI
 // Occupez-vous de compléter cette fonction afin de calculer le AABB pour le Mesh.
 // Il faut que le AABB englobe minimalement notre objet à moins que l'énoncé prononce le contraire.
-AABB Mesh::compute_aabb() { return construct_aabb(positions); }
+AABB Mesh::compute_aabb() { return construct_aabb(this->positions); }
