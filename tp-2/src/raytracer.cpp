@@ -289,8 +289,11 @@ double3 Raytracer::shade(const Scene& scene, Intersection hit) {
         double n_dot_h = fmax(0, dot(hit.normal, h));
 
         // Select albedo
-        if (mat.texture_albedo.width() != 0 && mat.texture_albedo.height() != 0) {
-            rgb_t pixel = mat.texture_albedo.get_pixel(hit.uv.x, hit.uv.y);
+        bitmap_image texture = mat.texture_albedo;
+        if (texture.width() != 0 && texture.height() != 0) {
+            rgb_t pixel =
+                mat.texture_albedo.get_pixel(floor(hit.uv.x * texture.width()), floor(hit.uv.y * texture.height()));
+
             albedo = {static_cast<double>(pixel.red), static_cast<double>(pixel.green),
                       static_cast<double>(pixel.blue)};
             // Normalize the color
