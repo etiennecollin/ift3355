@@ -56,6 +56,11 @@ bool Sphere::local_intersect(Ray ray, double t_min, double t_max, Intersection *
     }
     hit->normal = normal;
 
+    // Compute UV coordinates
+    // Precompute the inverse of pi
+    double pi_inverse = 1 / M_PI;
+    hit->uv = double2{0.5 + atan2(normal.x, normal.z) * pi_inverse / 2, 0.5 - asin(normal.y) * pi_inverse};
+
     return true;
 }
 
