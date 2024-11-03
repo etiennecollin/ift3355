@@ -196,7 +196,6 @@ void Raytracer::trace(const Scene& scene, Ray ray, int ray_depth, double3* out_c
 //     * Déterminer la couleur du point d'intersection.
 //         - Si texture est présente, prende la couleur à la coordonnées uv
 //         - Si aucune texture, prendre la couleur associé au matériel.
-
 double3 Raytracer::shade(const Scene& scene, Intersection hit) {
     Material& mat = ResourceManager::Instance()->materials[hit.key_material];
     double3 albedo;
