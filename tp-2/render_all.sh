@@ -11,4 +11,5 @@ if [ ! -x "$(command -v parallel)" ]; then
     exit 1
 fi
 
-fd ".*.ray" data/scene --format {/} | parallel -j 10 -n 1 ./build/RAY
+# Render on 20 threads
+fd ".*.ray" data/scene --format {/} | parallel -j 20 -n 1 ./build/RAY
