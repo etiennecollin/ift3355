@@ -59,7 +59,7 @@ bool Sphere::local_intersect(Ray ray, double t_min, double t_max, Intersection *
     // Compute UV coordinates
     // Precompute the inverse of pi
     double pi_inverse = 1 / M_PI;
-    hit->uv = double2{0.5 - atan2(normal.x, normal.z) * pi_inverse / 2, 0.5 - asin(normal.y) * pi_inverse};
+    hit->uv = double2{0.5 + atan2(-normal.x, -normal.z) * pi_inverse / 2, 0.5 - asin(normal.y) * pi_inverse};
 
     return true;
 }
@@ -121,6 +121,11 @@ bool Quad::local_intersect(Ray ray, double t_min, double t_max, Intersection *hi
     // The nomal of the hit should be z on the same direction as the ray
     hit->normal = ray.direction.z > 0 ? double3{0, 0, -1} : double3{0, 0, 1};
 
+    // Compute UV coordinates
+    // Precompute the inverse the length of the quad
+    double inverse_length = 1 / (2 * this->half_size);
+    hit->uv = (double2{intersection.x, -intersection.y} + this->half_size) * inverse_length;
+
     return true;
 }
 
@@ -180,7 +185,7 @@ bool Cylinder::local_intersect(Ray ray, double t_min, double t_max, Intersection
 
     // Get the closest valid intersection
     double t;
-    double3 hit_position;
+    double3 intersection;
     if (t_p <= 0 || t_m <= 0) {
         t = fmax(t_p, t_m);
     } else {
@@ -193,11 +198,11 @@ bool Cylinder::local_intersect(Ray ray, double t_min, double t_max, Intersection
         if (is_tp_valid && is_tm_valid) {
             // Both intersections are within bounds, take the closer one
             t = fmin(t_p, t_m);
-            hit_position = (t == t_p) ? hit_position_tp : hit_position_tm;
+            intersection = (t == t_p) ? hit_position_tp : hit_position_tm;
         } else if (is_tp_valid || is_tm_valid) {
             // Only one of the intersections is within bounds, take the valid one
             t = is_tp_valid ? t_p : t_m;
-            hit_position = is_tp_valid ? hit_position_tp : hit_position_tm;
+            intersection = is_tp_valid ? hit_position_tp : hit_position_tm;
         } else {
             return false;
         }
@@ -209,17 +214,23 @@ bool Cylinder::local_intersect(Ray ray, double t_min, double t_max, Intersection
     }
 
     hit->depth = t;
-    hit->position = hit_position;
+    hit->position = intersection;
     hit->key_material = this->key_material;
 
     // For a point on the cylinder surface, the normal is in the xz-plane
-    double3 normal = normalize(double3{hit_position.x, 0, hit_position.z});
+    double3 normal = normalize(double3{intersection.x, 0, intersection.z});
 
     // If the ray is hitting the inside of the cylinder, flip the normal to point outward
     if (dot(ray.direction, normal) > 0) {
         normal = -normal;
     }
     hit->normal = normal;
+
+    // Compute UV coordinates
+    // Precompute the inverse of pi
+    double pi_inverse = 1 / M_PI;
+    hit->uv = double2{this->radius + atan2(normal.x, normal.z) * pi_inverse / 2,
+                      (-intersection.y + this->half_height) / (2 * this->half_height)};
 
     return true;
 }
