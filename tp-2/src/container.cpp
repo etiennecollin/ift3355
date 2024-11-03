@@ -1,6 +1,4 @@
 #include "container.h"
-#include <bits/stdc++.h>
-using namespace std;
 
 // @@@@@@ VOTRE CODE ICI
 // - Parcourir l'arbre DEPTH FIRST SEARCH selon les conditions suivantes:
@@ -9,38 +7,38 @@ using namespace std;
 //          - Faites l'intersection du rayon avec le AABB gauche et droite.
 //              - S'il y a intersection, ajouter le noeud à ceux à visiter.
 // - Retourner l'intersection avec la profondeur maximale la plus PETITE.
-bool BVH::intersect(Ray ray, double t_min, double t_max, Intersection* hit) { 
-    bool didHit=false;
-    if(root->aabb.intersect(ray,t_min,t_max)){
-        //crée une stack de BVHNodes* et l'initialise avec la root du BVH
-        stack<BVHNode*> liste;
-        liste.push(root);
-        Intersection localHit;
-        localHit.depth=DBL_MAX;
-        //DFS non-récursif
-        while(!liste.empty()){
-            BVHNode* currentNode = liste.top();
-            liste.pop();
-            if(currentNode->aabb.intersect(ray,t_min,t_max) && !currentNode->left && !currentNode->right){
-                if(objects[currentNode->idx]->intersect(ray,t_min,t_max,&localHit)){
-                    if(localHit.depth<hit->depth){
-                        *hit=localHit;
-                        didHit=true;
+bool BVH::intersect(Ray ray, double t_min, double t_max, Intersection* hit) {
+    bool did_hit = false;
+    if (root->aabb.intersect(ray, t_min, t_max)) {
+        // Create a stack of BVHNodes* and initialize it with the root of the BVH
+        std::vector<BVHNode*> stack;
+        stack.push_back(root);
+
+        Intersection local_hit;
+        // Non-recursive DFS
+        while (!stack.empty()) {
+            BVHNode* currentNode = stack.back();
+            stack.pop_back();
+            if (currentNode->aabb.intersect(ray, t_min, t_max) && !currentNode->left && !currentNode->right) {
+                if (objects[currentNode->idx]->intersect(ray, t_min, t_max, &local_hit)) {
+                    if (local_hit.depth < hit->depth) {
+                        *hit = local_hit;
+                        did_hit = true;
                     }
                 }
-            }
-            else if(currentNode->aabb.intersect(ray,t_min,t_max)){
-                if(currentNode->left){
-                    liste.push(currentNode->left);
+            } else if (currentNode->aabb.intersect(ray, t_min, t_max)) {
+                if (currentNode->left) {
+                    stack.push_back(currentNode->left);
                 }
-                if(currentNode->right){
-                    liste.push(currentNode->right);
+                if (currentNode->right) {
+                    stack.push_back(currentNode->right);
                 }
             }
         }
     }
-    
-    return didHit; }
+
+    return did_hit;
+}
 
 // @@@@@@ VOTRE CODE ICI
 // - Parcourir tous les objets
