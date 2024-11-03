@@ -192,8 +192,10 @@ bool Cylinder::local_intersect(Ray ray, double t_min, double t_max, Intersection
         double3 hit_position_tp = ray.origin + ray.direction * t_p;
         double3 hit_position_tm = ray.origin + ray.direction * t_m;
 
-        bool is_tp_valid = (hit_position_tp.y >= -this->half_height && hit_position_tp.y <= this->half_height);
-        bool is_tm_valid = (hit_position_tm.y >= -this->half_height && hit_position_tm.y <= this->half_height);
+        bool is_tp_valid = (t_p > t_min && t_p < t_max && hit_position_tp.y >= -this->half_height &&
+                            hit_position_tp.y <= this->half_height);
+        bool is_tm_valid = (t_m > t_min && t_m < t_max && hit_position_tm.y >= -this->half_height &&
+                            hit_position_tm.y <= this->half_height);
 
         if (is_tp_valid && is_tm_valid) {
             // Both intersections are within bounds, take the closer one
@@ -206,11 +208,6 @@ bool Cylinder::local_intersect(Ray ray, double t_min, double t_max, Intersection
         } else {
             return false;
         }
-    }
-
-    // Check if the intersection is within the depth
-    if (t < t_min || t > t_max) {
-        return false;
     }
 
     hit->depth = t;
