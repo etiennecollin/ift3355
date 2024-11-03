@@ -1,4 +1,6 @@
 #include "container.h"
+#include <bits/stdc++.h>
+using namespace std;
 
 // @@@@@@ VOTRE CODE ICI
 // - Parcourir l'arbre DEPTH FIRST SEARCH selon les conditions suivantes:
@@ -7,7 +9,38 @@
 //          - Faites l'intersection du rayon avec le AABB gauche et droite.
 //              - S'il y a intersection, ajouter le noeud à ceux à visiter.
 // - Retourner l'intersection avec la profondeur maximale la plus PETITE.
-bool BVH::intersect(Ray ray, double t_min, double t_max, Intersection* hit) { return true; }
+bool BVH::intersect(Ray ray, double t_min, double t_max, Intersection* hit) { 
+    bool didHit=false;
+    if(root->aabb.intersect(ray,t_min,t_max)){
+        //crée une stack de BVHNodes* et l'initialise avec la root du BVH
+        stack<BVHNode*> liste;
+        liste.push(root);
+        Intersection localHit;
+        localHit.depth=DBL_MAX;
+        //DFS non-récursif
+        while(!liste.empty()){
+            BVHNode* currentNode = liste.top();
+            liste.pop();
+            if(currentNode->aabb.intersect(ray,t_min,t_max) && !currentNode->left && !currentNode->right){
+                if(objects[currentNode->idx]->intersect(ray,t_min,t_max,&localHit)){
+                    if(localHit.depth<hit->depth){
+                        *hit=localHit;
+                        didHit=true;
+                    }
+                }
+            }
+            else if(currentNode->aabb.intersect(ray,t_min,t_max)){
+                if(currentNode->left){
+                    liste.push(currentNode->left);
+                }
+                if(currentNode->right){
+                    liste.push(currentNode->right);
+                }
+            }
+        }
+    }
+    
+    return didHit; }
 
 // @@@@@@ VOTRE CODE ICI
 // - Parcourir tous les objets

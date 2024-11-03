@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.24.2)
+cmake_minimum_required(VERSION 3.22)
 
 # Setup CMake options for cross-compiling to macOS from docker container
 if(APPLE)
