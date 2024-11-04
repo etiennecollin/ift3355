@@ -12,4 +12,4 @@ if [ ! -x "$(command -v parallel)" ]; then
 fi
 
 # Render on 20 threads
-fd ".*.ray" data/scene --format {/} | parallel -j 20 -n 1 ./build/RAY
+time (fd ".*.ray" data/scene --format {/} | parallel -j 20 -n 1 ./build/RAY >logs.txt)
