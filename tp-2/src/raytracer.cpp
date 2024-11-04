@@ -2,9 +2,6 @@
 
 #include "basic.h"
 
-// Added for multi-threading
-#include <future>
-
 void Raytracer::render(const Scene& scene, Frame* output) {
     // Crée le z_buffer.
     double* z_buffer = new double[scene.resolution[0] * scene.resolution[1]];
@@ -139,8 +136,8 @@ void Raytracer::render(const Scene& scene, Frame* output) {
     }
 
     // Wait for all threads to finish
-    for (auto& fut : futures) {
-        fut.get();
+    for (auto& future : futures) {
+        future.get();
     }
 
     delete[] z_buffer;
@@ -170,13 +167,7 @@ void Raytracer::trace(const Scene& scene, Ray ray, int ray_depth, double3* out_c
             double3 incident_direction = -ray.direction;
             if (mat.k_reflection != 0 || mat.k_refraction != 0) {
                 // Compute the dot product once as it is used multiple times
-                // The value is between 0 and 1 as the vectors are normalized and go in the "same" direction
-
                 dot_product = dot(hit.normal, incident_direction);
-                // if (dot_product < 0) {
-                //     // dot_product = fmin(dot(hit.normal, incident_direction), 1);
-                //     std::cout << "Negative dot product: " << dot_product << std::endl;
-                // }
             }
             if (mat.k_reflection != 0) {
                 // Compute direction of reflected ray

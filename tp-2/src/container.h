@@ -54,8 +54,20 @@ class BVH : virtual public IContainer {
     BVH(std::vector<Object*> objs) : objects(objs) {
         std::vector<BVHObjectInfo> bvhs;
 
+        // Vector to store futures for each AABB computation
+        std::vector<std::future<BVHObjectInfo>> futures;
+
+        // Launch asynchronous tasks to compute AABBs in parallel and create BVHObjectInfo instances
         for (int iobj = 0; iobj < objects.size(); iobj++) {
-            bvhs.push_back({iobj, objects[iobj]->compute_aabb()});
+            futures.push_back(std::async(std::launch::async, [&, iobj] {
+                // Assuming BVHObjectInfo can be constructed with (int, AABB)
+                return BVHObjectInfo{iobj, objects[iobj]->compute_aabb()};
+            }));
+        }
+
+        // Wait for each future to complete and collect the results in bvhs
+        for (auto& future : futures) {
+            bvhs.push_back(future.get());
         }
 
         root = recursive_build(bvhs, 0, bvhs.size(), 0);
@@ -105,8 +117,17 @@ class Naive : virtual public IContainer {
 
     // Simple constructeur de Naive à partir d'une liste d'objets
     Naive(std::vector<Object*> objs) : objects(objs) {
+        // Vector to store futures for each AABB computation
+        std::vector<std::future<AABB>> futures;
+
+        // Launch asynchronous tasks to compute AABBs in parallel
         for (auto obj : objects) {
-            aabbs.push_back(obj->compute_aabb());
+            futures.push_back(std::async(std::launch::async, &Object::compute_aabb, obj));
+        }
+
+        // Wait for each future to complete and collect the results
+        for (auto& future : futures) {
+            aabbs.push_back(future.get());
         }
     }
     ~Naive() {};

@@ -3,6 +3,9 @@
 #include "linalg/linalg.h"
 using namespace linalg::aliases;
 
+// Added for multi-threading
+#include <future>
+
 #define PI 3.14159265358979323846
 #define EPSILON 1e-6
 #define WORLD_IOR 1.0
