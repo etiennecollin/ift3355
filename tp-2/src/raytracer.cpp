@@ -305,8 +305,6 @@ double3 Raytracer::shade(const Scene& scene, Intersection hit) {
         // Pre-compute the N dot L product
         double n_dot_l = fmax(0, dot(hit.normal, hit_light_direction));
 
-        // Compute the reflected light direction
-        double3 reflected_light_direction = 2 * n_dot_l * hit.normal - hit_light_direction;
         // Pre-compute the N dot H product for Blinn
         double3 h = normalize(hit_light_direction + hit_camera_direction);
         double n_dot_h = fmax(0, dot(hit.normal, h));
