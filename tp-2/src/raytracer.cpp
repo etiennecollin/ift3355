@@ -2,6 +2,9 @@
 
 #include "basic.h"
 
+// Added for multi-threading
+#include <future>
+
 void Raytracer::render(const Scene& scene, Frame* output) {
     // Crée le z_buffer.
     double* z_buffer = new double[scene.resolution[0] * scene.resolution[1]];
@@ -69,10 +72,7 @@ void Raytracer::render(const Scene& scene, Frame* output) {
     double defocus_radius = scene.camera.focus_distance * tan(defocus_cone_angle);
 
     // Iterate on all pixels
-    for (int y = 0; y < scene.resolution[1]; y++) {
-        if (y % 40) {
-            std::cout << "\rScanlines completed: " << y << "/" << scene.resolution[1] << '\r';
-        }
+    auto render_row = [&](int y) {
         for (int x = 0; x < scene.resolution[0]; x++) {
             int avg_z_depth = 0;
             double3 avg_ray_color{0, 0, 0};
@@ -98,8 +98,7 @@ void Raytracer::render(const Scene& scene, Frame* output) {
                 double3 pixel_position = screen_tl_position + pixel_x_offset + pixel_y_offset;
 
                 // Compute the direction of the ray
-                double3 ray_direction = pixel_position - ray.origin;
-                ray.direction = normalize(ray_direction);
+                ray.direction = normalize(pixel_position - ray.origin);
 
                 // Initialize the tracing
                 Intersection hit;
@@ -130,6 +129,18 @@ void Raytracer::render(const Scene& scene, Frame* output) {
                     x, y, (avg_z_depth - scene.camera.z_near) / (scene.camera.z_far - scene.camera.z_near));
             }
         }
+    };
+
+    std::vector<std::future<void>> futures;
+
+    // Launch threads for each row
+    for (int y = 0; y < scene.resolution[1]; y++) {
+        futures.push_back(std::async(std::launch::async, render_row, y));
+    }
+
+    // Wait for all threads to finish
+    for (auto& fut : futures) {
+        fut.get();
     }
 
     delete[] z_buffer;
@@ -160,7 +171,12 @@ void Raytracer::trace(const Scene& scene, Ray ray, int ray_depth, double3* out_c
             if (mat.k_reflection != 0 || mat.k_refraction != 0) {
                 // Compute the dot product once as it is used multiple times
                 // The value is between 0 and 1 as the vectors are normalized and go in the "same" direction
+
                 dot_product = dot(hit.normal, incident_direction);
+                // if (dot_product < 0) {
+                //     // dot_product = fmin(dot(hit.normal, incident_direction), 1);
+                //     std::cout << "Negative dot product: " << dot_product << std::endl;
+                // }
             }
             if (mat.k_reflection != 0) {
                 // Compute direction of reflected ray
