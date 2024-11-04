@@ -47,6 +47,7 @@ void Raytracer::render(const Scene& scene, Frame* output) {
     // respectively.
     double3 CENTER = normalize(scene.camera.center - scene.camera.position);
     double3 RIGHT = normalize(cross(CENTER, scene.camera.up));
+    double3 UP = normalize(cross(RIGHT, CENTER));
 
     // Screen is placed at z-near distance from the camera or at the focus distance if it is set
     double screen_depth = scene.camera.focus_distance > 0 ? scene.camera.focus_distance : scene.camera.z_near;
@@ -61,7 +62,7 @@ void Raytracer::render(const Scene& scene, Frame* output) {
 
     // Get the world coordinates of the top left corner of the screen
     double3 screen_tl_position = scene.camera.position - (screen_left_offset - pixel_size_x / 2) * RIGHT -
-                                 (screen_top_offset - pixel_size_y / 2) * scene.camera.up + screen_depth * CENTER;
+                                 (screen_top_offset - pixel_size_y / 2) * UP + screen_depth * CENTER;
 
     // Compute the angle between the defocus cone axis and side
     double defocus_cone_angle = deg2rad(scene.camera.defocus_angle / 2);
@@ -84,14 +85,14 @@ void Raytracer::render(const Scene& scene, Frame* output) {
                 if (scene.camera.defocus_angle > 0) {
                     // Generate the random disk point and compute offset
                     double2 random_disk_point = random_in_unit_disk() * defocus_radius;
-                    focus_offset = random_disk_point.x * RIGHT + random_disk_point.y * scene.camera.up;
+                    focus_offset = random_disk_point.x * RIGHT + random_disk_point.y * UP;
                 }
                 ray.origin = scene.camera.position + focus_offset;
 
                 // Compute the pixel position with a random jitter
                 double2 pixel_jitter = (rand_double2() - 0.5) * 2 * scene.jitter_radius;
                 double3 pixel_x_offset = (x + pixel_jitter.x) * pixel_size_x * RIGHT;
-                double3 pixel_y_offset = (y + pixel_jitter.y) * pixel_size_y * scene.camera.up;
+                double3 pixel_y_offset = (y + pixel_jitter.y) * pixel_size_y * UP;
                 double3 pixel_position = screen_tl_position + pixel_x_offset + pixel_y_offset;
 
                 // Compute the direction of the ray
