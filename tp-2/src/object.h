@@ -91,6 +91,9 @@ class Intersection {
     // La clé associée au matériel utilisé.
     std::string key_material;
 
+    // Store object id
+    double obj_id;
+
     Intersection() : depth(DBL_MAX) {}
 };
 

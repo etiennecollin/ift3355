@@ -159,6 +159,7 @@ void Raytracer::trace(const Scene& scene, Ray ray, int ray_depth, double3* out_c
             double3 incident_direction = -ray.direction;
             if (mat.k_reflection != 0 || mat.k_refraction != 0) {
                 // Compute the dot product once as it is used multiple times
+                // The value is between 0 and 1 as the vectors are normalized and go in the "same" direction
                 dot_product = dot(hit.normal, incident_direction);
             }
             if (mat.k_reflection != 0) {
@@ -167,22 +168,44 @@ void Raytracer::trace(const Scene& scene, Ray ray, int ray_depth, double3* out_c
 
                 // Reflected ray starts at hit and goes in the reflected direction
                 Ray reflected_ray = Ray(hit.position, reflected_direction);
-                reflected_ray.current_IOR = ray.current_IOR;
+                reflected_ray.ior_stack = ray.ior_stack;
 
                 // Trace the reflected ray
                 trace(scene, reflected_ray, ray_depth + 1, &reflected_color, out_z_depth);
             }
             if (mat.k_refraction != 0) {
-                double eta = ray.current_IOR / mat.refractive_index;
+                std::vector<double2> new_ior_stack = ray.ior_stack;
 
-                // Compute the direction of the refracted ray
-                double3 refracted_direction =
-                    normalize(hit.normal * (eta * dot_product - sqrt(1 - pow(eta, 2) * (1 - pow(dot_product, 2)))) -
-                              eta * incident_direction);
+                // Check if we are exiting the object and set proper eta
+                double eta;
+                if (new_ior_stack.back().x == hit.obj_id) {
+                    // We are exiting the object
+                    new_ior_stack.pop_back();
+                    eta = mat.refractive_index / new_ior_stack.back().y;
+                } else {
+                    // We are entering the object
+                    eta = new_ior_stack.back().y / mat.refractive_index;
+                    new_ior_stack.push_back({hit.obj_id, mat.refractive_index});
+                }
+
+                // Check for total internal reflection
+                double3 direction;
+                double root = sqrt(1 - pow(dot_product, 2));
+                if (eta * root > 1) {
+                    // Reflect the ray
+                    direction = normalize(2 * dot_product * hit.normal - incident_direction);
+                    // We are still inside the object
+                    new_ior_stack.push_back({hit.obj_id, mat.refractive_index});
+                } else {
+                    // Refract the ray
+                    direction =
+                        normalize(hit.normal * (eta * dot_product - sqrt(1 - pow(eta, 2) * (1 - pow(dot_product, 2)))) -
+                                  eta * incident_direction);
+                }
 
                 // Refracted ray starts at hit and goes in the refracted direction
-                Ray refracted_ray = Ray(hit.position, refracted_direction);
-                refracted_ray.current_IOR = mat.refractive_index;
+                Ray refracted_ray = Ray(hit.position, direction);
+                refracted_ray.ior_stack = new_ior_stack;
 
                 // Trace the refracted ray
                 trace(scene, refracted_ray, ray_depth + 1, &refracted_color, out_z_depth);
@@ -284,7 +307,6 @@ double3 Raytracer::shade(const Scene& scene, Intersection hit) {
 
         // Compute the reflected light direction
         double3 reflected_light_direction = 2 * n_dot_l * hit.normal - hit_light_direction;
-
         // Pre-compute the N dot H product for Blinn
         double3 h = normalize(hit_light_direction + hit_camera_direction);
         double n_dot_h = fmax(0, dot(hit.normal, h));

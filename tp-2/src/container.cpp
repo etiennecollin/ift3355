@@ -22,8 +22,9 @@ bool BVH::intersect(Ray ray, double t_min, double t_max, Intersection* hit) {
             if (currentNode->aabb.intersect(ray, t_min, t_max) && !currentNode->left && !currentNode->right) {
                 if (objects[currentNode->idx]->intersect(ray, t_min, t_max, &local_hit)) {
                     if (local_hit.depth < hit->depth) {
-                        *hit = local_hit;
                         did_hit = true;
+                        *hit = local_hit;
+                        hit->obj_id = currentNode->idx;
                     }
                 }
             } else if (currentNode->aabb.intersect(ray, t_min, t_max)) {
@@ -63,6 +64,7 @@ bool Naive::intersect(Ray ray, double t_min, double t_max, Intersection* hit) {
                 if (i == 0 || local_hit.depth < hit->depth) {
                     did_hit = true;
                     *hit = local_hit;
+                    hit->obj_id = i;
                 }
             }
         }

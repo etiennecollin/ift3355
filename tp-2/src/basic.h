@@ -5,6 +5,7 @@ using namespace linalg::aliases;
 
 #define PI 3.14159265358979323846
 #define EPSILON 1e-6
+#define WORLD_IOR 1.0
 
 // Valeur aléatoire entre [0,1)
 static double rand_double() { return double(rand()) / double((RAND_MAX)); }
@@ -35,5 +36,5 @@ class Ray {
 
     double3 origin;     // Origine du rayon
     double3 direction;  // Direction du rayon
-    double current_IOR = 1.0;
+    std::vector<double2> ior_stack = {{-1, WORLD_IOR}};
 };
