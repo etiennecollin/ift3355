@@ -4,7 +4,7 @@
 mkdir -p build
 
 # Run cmake with the provided target
-cmake -DCMAKE_BUILD_TYPE=Release -S . -B build
+cmake -DCMAKE_BUILD_TYPE=Debug -S . -B build
 
 # Check if cmake ran successfully
 if [ $? -eq 0 ]; then
