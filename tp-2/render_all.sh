@@ -9,4 +9,5 @@ fi
 mkdir -p logs
 
 # Render in parallel
-time fd -e ray -p ./data/scene -x sh -c "./build/RAY '{/}' > './logs/{/.}.txt'"
+# time fd -e ray -p ./data/scene -x sh -c "./build/RAY '{/}' > './logs/{/.}.txt'"
+time fd -e ray -p ./data/scene -x sh -c ./build/RAY "{/}"
