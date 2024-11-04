@@ -6,10 +6,7 @@ if [ ! -x "$(command -v fd)" ]; then
     exit 1
 fi
 
-if [ ! -x "$(command -v parallel)" ]; then
-    echo "parallel is not installed. Please install it."
-    exit 1
-fi
+mkdir -p logs
 
-# Render on 20 threads
-time (fd ".*.ray" data/scene --format {/} | parallel -j 20 -n 1 ./build/RAY >logs.txt)
+# Render in parallel
+time fd -e ray -p ./data/scene -x sh -c "./build/RAY '{/}' > './logs/{/.}.txt'"
