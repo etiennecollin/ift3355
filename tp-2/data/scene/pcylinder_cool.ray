@@ -62,8 +62,8 @@ PopMatrix
 #Lumière blanche
 SphericalLight 1 1 2
     "emission" [1 0 1]    # couleur [r g b]
-    "radius" 0
+    "radius" 0.4
 
 SphericalLight -1 1 -2
     "emission" [0 0.25 1]    # couleur [r g b]
-    "radius" 0
+    "radius" 0.4
