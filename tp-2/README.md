@@ -5,6 +5,14 @@ Vos noms et matricules:
 - Etienne Collin | 20237904
 - Louis Malenfant-Poulin | 20120851
 
+## Important
+
+Pour une quelconque raison, les optimisations de `-O2` et plus du compilateur empêchent le code de fonctionner correctement (`-O1` est le plus haut _preset_ d'optimisation qui est fonctionnel).
+
+Normalement, pour compiler le code, simplement exécuter `./build.sh -r`. Le _flag_ `-r` est pour compiler en mode _release_ fonctionnel, et l'absence du `-r` est pour compiler en mode _debug_.
+
+Pour _render_ les scènes, il est possible de soit exécuter directement l'exécutable généré `./build/RAY <scene.ray>`, soit d'exécuter `./render_all.sh` qui fera le render de toutes les scènes en parallèle. Ce dernier script a un temps d'exécution d'environ 1 minute. Puisque les scènes sont _rendered_ en parallèle, utilisez le _flag_ `-l` afin de générer un (1) fichier de logs par scène qui contient tous les messages écrits dans le `stdout` par l'exécutable. Ces logs seront placés dans `./logs/`
+
 ## Notes
 
 Certaines fonctionnalités ont été ajoutées en plus de celles demandées.
