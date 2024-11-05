@@ -28,3 +28,22 @@ Certaines fonctionnalités ont été ajoutées en plus de celles demandées.
   - `./src/basic.h`: Importation de `#include <future>` pour le parallélisme.
   - `./src/raytracer.cpp`: Ajout de parallélisme à la génération des colonnes de pixels dans `Raytracer::render`.
   - `./src/container.h`: Traitement parallèle des objets dans les constructeurs des classes `BVH` et `AABB`.
+
+## Erreurs dans les références
+
+Deux sphères ont été ajoutées à la position des lumières dans `all_at_once.ray`.
+
+![](assets/analysis_0.png)
+
+Avec le masking de luminosité, on peut observer que les deux sources lumineuses ne peuvent pas projeter de lumière **directe** à travers le trou avant du cylindre, car elles sont trop reculées dans la scène (ce que montre le masking en faisant disparaître les sphères lumineuses avant d'atteindre le devant du cylindre).
+
+![](assets/analysis_1.png)
+
+Pour la lumière la plus éloignée, elle semble se situer à peu près au même niveau que l'arrière du cylindre, peut-être même un peu plus près de la caméra. Ainsi, son angle d'incidence n'est définitivement pas suffisamment élevé pour atteindre l'intérieur avant du cylindre. Voir les deux images suivantes.
+
+![](assets/analysis_2a.png)
+![](assets/analysis_2b.png)
+
+Similairement, dans `pcylinder.ray`, le cylindre ne devrait pas être éclairé à l'intérieur; l'angle avec les lumières permet uniquement un petit hâlo de lumière aux deux extrémités du cylindre, mais pas en son centre.
+
+Il est possible que le code ayant généré les références ait rencontré un bug lors du calcul des intersections des cylindres avec eux mêmes. En effet, il semble que cette version ne prenne pas en compte les ombres que le cylindre projette sur lui-même. Cela pourrait expliquer pourquoi notre code produit les mêmes résultats que les références sauf pour les scènes contenant des cylindres.
