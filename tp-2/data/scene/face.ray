@@ -1,13 +1,14 @@
 #Meta argument for the actual scene
 container "Naive"
-dimension 640 480
+dimension 3024 1964
 samples_per_pixel 16
 jitter_radius 0.5
-max_ray_depth 2
+max_ray_depth 4
 ambient_light [0 0 0]
 
 # Comme gluPerspective.
-Perspective 30.0 1.33 3 100
+# Perspective 30.0 1.5397148676 3 100
+Perspective 180.0 1.5397148676 3 100
 
 # Comme gluLookAt.
 LookAt  0  5  10 # position de l'oeil
@@ -15,6 +16,18 @@ LookAt  0  5  10 # position de l'oeil
         0 0.992278 -0.124035 # Vecteur up
 
 # DOF 5.0 15.0 # angle de défocalisation et distance de mise au point
+
+Material "refract"
+    "texture_albedo" "" # Fichier vers la texture albedo
+    "color_albedo" [0 0 0] # Couleur albedo
+    "k_ambient"   0 # Coefficient Ambient
+    "k_diffuse"   0 # Coefficent Diffus
+    "k_specular"  0 # Coefficient speculaire
+    "shininess" 0 # Exposant speculaire
+    "metallic" 0 # Coefficent metallique
+    "k_refraction" 1 # Facteur de refraction
+        "refractive_index"   0.85 # Indice de refraction
+    "k_reflection" 0 # Indice de reflection
 
 Material "glass"
     "texture_albedo" "" # Fichier vers la texture albedo
@@ -103,12 +116,18 @@ Material "face"
 ###############################################################################
 
 # Rotation puts the center of the image on the visible side of the sphere
-PushMatrix
-    Translate 0 0 -5
-    Rotate 180 0 1 0
-    Rotate 25 1 0 0
-    Sphere 2 "face"
-PopMatrix
+# PushMatrix
+#     Translate 0 0 -5
+#     Rotate 180 0 1 0
+#     Rotate 25 1 0 0
+#     Sphere 2 "face"
+# PopMatrix
+
+# PushMatrix
+#     Translate 0 0 -5
+#     Rotate 90 0 1 0
+#     Cylinder 2 1 "face"
+# PopMatrix
 
 # Floor
 PushMatrix
@@ -116,6 +135,12 @@ PushMatrix
     Rotate -90 1 0 0
     Quad 40 "white"
 PopMatrix
+
+PushMatrix
+    Translate 0 0 -5
+    Sphere 2 "refract"
+PopMatrix
+
 
 ###############################################################################
 # Spécification pour une source de lumière :
