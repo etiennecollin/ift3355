@@ -7,8 +7,8 @@ max_ray_depth 4
 ambient_light [0 0 0]
 
 # Comme gluPerspective.
-# Perspective 30.0 1.5397148676 3 100
-Perspective 180.0 1.5397148676 3 100
+Perspective 30.0 1.5397148676 3 100
+# Perspective 180.0 1.5397148676 3 100
 
 # Comme gluLookAt.
 LookAt  0  5  10 # position de l'oeil

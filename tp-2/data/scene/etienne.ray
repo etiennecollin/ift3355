@@ -1,10 +1,10 @@
 #Meta argument for the actual scene
 dimension 640 480 #Largeur Hauteur
 container "Naive" # Type de container pour nos objets [Naive,BVH]
-samples_per_pixel 5 # Nombre d'echantillon par pixel
+samples_per_pixel 16 # Nombre d'echantillon par pixel
 jitter_radius 0.5 # Variation aléatoire dans un carrée lors du lancer de rayon.
-max_ray_depth  3 # Profondeur maximale
-ambient_light [0.1 0.1 0.1] # Lumière ambiante associée à la lampe.
+max_ray_depth  10 # Profondeur maximale
+ambient_light [0.5 0.5 0.5] # Lumière ambiante associée à la lampe.
 
 # Comme gluPerspective.
 Perspective 30.0 1.33 3 20
@@ -111,7 +111,7 @@ Material "raph"
     "k_reflection" 0
 
 Material "etienne"
-    "texture_albedo" "data/assets/texture/etienne.bmp"
+    "texture_albedo" "data/assets/texture/renaud.bmp"
     "color_albedo" [0.6 0.6 0.6]
     "k_ambient"   1.0
     "k_diffuse"   0
@@ -140,7 +140,7 @@ PushMatrix
     Translate 1 0 0
     Rotate 90 1 0 0 
     Rotate 45 0 0 1
-    Cylinder 0.75 1.5 "glass" # Sphere rayon hauteur "material"
+    Cylinder 0.75 1.5 "mirror" # Sphere rayon hauteur "material"
 PopMatrix
 
 PushMatrix
@@ -222,10 +222,14 @@ SphericalLight 0 1 1
 
 # Lumières turquoise
 SphericalLight 2 -2 2
-    "emission" [0 0.5 1]
+    "emission" [0 1 1]
     "radius" 0
 
 SphericalLight 1 -2 0.5
-    "emission" [0 0.5 1]
+    "emission" [0 1 1]
+    "radius" 0
+
+SphericalLight -2.25 -2 2
+    "emission" [1 0 0]
     "radius" 0
 
