@@ -1,12 +1,11 @@
 #include "container.h"
 
-// @@@@@@ VOTRE CODE ICI
-// - Parcourir l'arbre DEPTH FIRST SEARCH selon les conditions suivantes:
-//      - S'il s'agit d'une feuille, faites l'intersection avec la géométrie.
-//      - Sinon, il s'agit d'un noeud altérieur.
-//          - Faites l'intersection du rayon avec le AABB gauche et droite.
-//              - S'il y a intersection, ajouter le noeud à ceux à visiter.
-// - Retourner l'intersection avec la profondeur maximale la plus PETITE.
+// - Use DFS to search the tree
+//      - If it is a leaf, intersect with the geometry
+//      - Otherwise, it is an internal node
+//          - Intersect the ray with the left and right AABB
+//              - If there is an intersection, add the node to the stack
+// - Return the intersection with the smallest maximum depth
 bool BVH::intersect(Ray ray, double t_min, double t_max, Intersection* hit) {
     bool did_hit = false;
     if (root->aabb.intersect(ray, t_min, t_max)) {
@@ -41,12 +40,11 @@ bool BVH::intersect(Ray ray, double t_min, double t_max, Intersection* hit) {
     return did_hit;
 }
 
-// @@@@@@ VOTRE CODE ICI
-// - Parcourir tous les objets
-//      - Détecter l'intersection avec l'AABB
-//      - Si intersection, détecter l'intersection avec la géométrie.
-//          - Si intersection, mettre à jour les paramètres.
-// - Retourner l'intersection avec la profondeur maximale la plus PETITE.
+// - Iterate over all of the objects
+//      - Detect intersection with the AABB
+//      - If intersection, detect intersection with the geometry
+//          - If intersection, update the parameters
+// - Return the intersection with the smallest maximum depth
 bool Naive::intersect(Ray ray, double t_min, double t_max, Intersection* hit) {
     // Iterate through the objects
     std::vector aabbs = Naive::aabbs;

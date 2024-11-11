@@ -17,30 +17,28 @@ using namespace linalg::aliases;
 
 class Raytracer {
    public:
-    // Rend la scène donnée par lancer de rayon.
-    // Met à jour la frame avec la couleur et la profondeur trouvée.
+    // Render the given scene by raytracing.
+    // Update the frame with the color and depth found.
     static void render(const Scene& scene, Frame* output);
 
    private:
-    // Lance un rayon dans la scène tout en étant responsable de la détection d'intersection.
-    // Permet des appels récursifs pour compléter la réflection et la réfraction.
+    // Cast a ray in the scen while being responsible for intersection detection.
+    // Allows recursive calls to complete reflection and refraction.
     //
-    // Paramètres
-    //   scene: Scène dans laquelle le rayon est lancé
-    //   rayon: Rayon actuel dans la scène
-    //   ray_depth: Profondeur de récursion du rayon actuellement lancé
-    //   out_color: Couleur associée à l'intersection
-    //   out_z_depth: Profondeur de la plus proche intersection qui agit comme une borne supérieure
-
+    // Parameters
+    //      scene: Scene in which the ray is launched
+    //      ray: Current ray in the scene
+    //      ray_depth: Recursion depth of the currently launched ray
+    //      out_color: Color associated with the intersection
+    //      out_z_depth: Depth of the closest intersection that acts as an upper bound
     static void trace(const Scene& scene, Ray ray, int ray_depth, double3* out_color, double* out_z_depth);
 
-    // Calcule l'ombrage (le shading) à l'intersection avec la géométrie.
-    // Responsable de l'illumination locale ainsi que de la génération des ombres dans la scène.
+    // Compute the shading at the intersection with the geometry.
+    // Responsible for local illumination as well as shadow generation in the scene.
     //
-    // Paramètres
-    //   scene: Scène dans laquelle le rayon est lancé
-    //   hit: Information sur l'intersection
-    //
-    // Renvoie la couleur calculée au point d'intersection.
+    // Parameters
+    //      scene: Scene in which the ray is launched
+    //      hit: Intersection information
+    // Returns the calculated color at the intersection point.
     static double3 shade(const Scene& scene, Intersection hit);
 };

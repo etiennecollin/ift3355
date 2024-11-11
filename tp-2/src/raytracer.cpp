@@ -3,7 +3,7 @@
 #include "basic.h"
 
 void Raytracer::render(const Scene& scene, Frame* output) {
-    // Crée le z_buffer.
+    // Create the z_buffer
     double* z_buffer = new double[scene.resolution[0] * scene.resolution[1]];
     for (int i = 0; i < scene.resolution[0] * scene.resolution[1]; i++) {
         z_buffer[i] = scene.camera.z_far;  // Anciennement DBL_MAX. À remplacer avec la valeur de scene.camera.z_far
@@ -144,16 +144,12 @@ void Raytracer::render(const Scene& scene, Frame* output) {
     delete[] z_buffer;
 }
 
-// @@@@@@ VOTRE CODE ICI
-// Veuillez remplir les objectifs suivants:
-//     - Détermine si le rayon intersecte la géométrie.
-//         - Calculer la contribution associée à la réflexion.
-//         - Calculer la contribution associée à la réfraction.
-//         - Mettre à jour la couleur avec le shading +
-//           Ajouter réflexion selon material.reflection +
-//           Ajouter réfraction selon material.refraction
-//           pour la couleur de sortie.
-//         - Mettre à jour la nouvelle profondeure.
+// Determine if the ray intersects an object
+//   - Compute the contribution associated with reflection
+//   - Compute the contribution associated with refraction
+//   - Update the color with the shading + reflection according to material.reflection + refraction according to
+//      material.refraction
+//   - Update the new depth
 void Raytracer::trace(const Scene& scene, Ray ray, int ray_depth, double3* out_color, double* out_z_depth) {
     Intersection hit;
     // Fait appel à l'un des containers spécifiées.
@@ -226,20 +222,18 @@ void Raytracer::trace(const Scene& scene, Ray ray, int ray_depth, double3* out_c
     }
 }
 
-// @@@@@@ VOTRE CODE ICI
-// Veuillez remplir les objectifs suivants:
-//     * Calculer la contribution des lumières dans la scène.
-//         - Itérer sur toutes les lumières.
-//             - Inclure la contribution spéculaire selon le modèle de Blinn en incluant la composante métallique.
-//             - Inclure la contribution diffuse. (Faites attention au produit scalare. >= 0)
-//         - Inclure la contribution ambiante
-//     * Calculer si le point est dans l'ombre
-//         - Itérer sur tous les objets et détecter si le rayon entre l'intersection et la lumière est occludé.
-//             - Ne pas considérer les points plus loins que la lumière.
-//         - Par la suite, intégrer la pénombre dans votre calcul
-//     * Déterminer la couleur du point d'intersection.
-//         - Si texture est présente, prende la couleur à la coordonnées uv
-//         - Si aucune texture, prendre la couleur associé au matériel.
+// Compute the contribution of the lights in the scene.
+//    - Iterate over all lights
+//      - Include the specular contribution using the Blinn model including the metallic component
+//      - Include the diffuse contribution
+//    - Include the ambient contribution
+// Compute if the point is in shadow
+//   - Iterate over all objects and detect if the ray between the intersection and the light is occluded
+//      - Do not consider points further than the light
+//   - Integrate the penumbra in your calculation
+// Determine the color of the intersection point
+//  - If texture is present, take the color at the uv coordinates
+//  - If no texture, take the color associated with the material
 double3 Raytracer::shade(const Scene& scene, Intersection hit) {
     Material& mat = ResourceManager::Instance()->materials[hit.key_material];
     double3 albedo;

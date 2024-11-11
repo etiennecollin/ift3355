@@ -3,13 +3,13 @@
 
 class ResourceManager {
    public:
-    // Initialise l'instance
+    // Initialise the instance
     static ResourceManager* Instance();
 
-    // Relâche l'instance
+    // Release the instance
     static void Release();
 
-    // Tous les différents matériaux sont conversés ici question de performance
+    // All the different materials are kept here for performance
     std::map<std::string, Material> materials;
 
    private:

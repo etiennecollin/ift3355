@@ -2,15 +2,10 @@
 
 #include "linalg/linalg.h"
 
-// Fonction retournant soit la valeur v0 ou v1 selon le signe.
+// Return either v0 or v1 depending on the sign of the value
 int rsign(double value, double v0, double v1) { return (int(std::signbit(value)) * (v1 - v0)) + v0; }
 
-// @@@@@@ VOTRE CODE ICI
-// Occupez-vous de compléter cette fonction afin de trouver l'intersection d'une sphère.
-//
-// Référez-vous au PDF pour la paramétrisation des coordonnées UV.
-//
-// Pour plus de d'informations sur la géométrie, référez-vous à la classe object.h.
+// Intersection of a ray with a sphere
 bool Sphere::local_intersect(Ray ray, double t_min, double t_max, Intersection *hit) {
     // Calculate the terms of the quadratic equation
     double a = pow(ray.direction.x, 2) + pow(ray.direction.y, 2) + pow(ray.direction.z, 2);
@@ -70,9 +65,7 @@ bool Sphere::local_intersect(Ray ray, double t_min, double t_max, Intersection *
     return true;
 }
 
-// @@@@@@ VOTRE CODE ICI
-// Occupez-vous de compléter cette fonction afin de calculer le AABB pour la sphère.
-// Il faut que le AABB englobe minimalement notre objet à moins que l'énoncé prononce le contraire (comme ici).
+// Compute the AABB for the sphere
 AABB Sphere::compute_aabb() {
     // Get 6 points; one for each face of the AABB
     double4 position = mul(this->transform, double4{0, 0, 0, 1});
@@ -91,12 +84,7 @@ AABB Sphere::compute_aabb() {
     return construct_aabb(points);
 }
 
-// @@@@@@ VOTRE CODE ICI
-// Occupez-vous de compléter cette fonction afin de trouver l'intersection avec un quad (rectangle).
-//
-// Référez-vous au PDF pour la paramétrisation des coordonnées UV.
-//
-// Pour plus de d'informations sur la géométrie, référez-vous à la classe object.h.
+// Compute the intersection of a ray with a quad
 bool Quad::local_intersect(Ray ray, double t_min, double t_max, Intersection *hit) {
     // Quick check if the ray is parallel to the xy plane
     if (ray.direction.z == 0) {
@@ -135,9 +123,7 @@ bool Quad::local_intersect(Ray ray, double t_min, double t_max, Intersection *hi
     return true;
 }
 
-// @@@@@@ VOTRE CODE ICI
-// Occupez-vous de compléter cette fonction afin de calculer le AABB pour le quad (rectangle).
-// Il faut que le AABB englobe minimalement notre objet à moins que l'énoncé prononce le contraire.
+// Compute the AABB for the quad
 AABB Quad::compute_aabb() {
     // Generate the 8 corners of the quad
     double epsilon = 1e-6;
@@ -156,12 +142,7 @@ AABB Quad::compute_aabb() {
     return construct_aabb(points);
 }
 
-// @@@@@@ VOTRE CODE ICI
-// Occupez-vous de compléter cette fonction afin de trouver l'intersection avec un cylindre.
-//
-// Référez-vous au PDF pour la paramétrisation des coordonnées UV.
-//
-// Pour plus de d'informations sur la géométrie, référez-vous à la classe object.h.
+// Compute the intersection of a ray with a cylinder
 bool Cylinder::local_intersect(Ray ray, double t_min, double t_max, Intersection *hit) {
     // Calculate the terms of the quadratic equation
     double a = pow(ray.direction.x, 2) + pow(ray.direction.z, 2);
@@ -234,9 +215,7 @@ bool Cylinder::local_intersect(Ray ray, double t_min, double t_max, Intersection
     return true;
 }
 
-// @@@@@@ VOTRE CODE ICI
-// Occupez-vous de compléter cette fonction afin de calculer le AABB pour le cylindre.
-// Il faut que le AABB englobe minimalement notre objet à moins que l'énoncé prononce le contraire (comme ici).
+// Compute the AABB for the cylinder
 AABB Cylinder::compute_aabb() {
     // Get 6 points on each side of the cylinder
     std::vector<double3> points = {
@@ -252,13 +231,7 @@ AABB Cylinder::compute_aabb() {
     return construct_aabb(points);
 }
 
-// @@@@@@ VOTRE CODE ICI
-// Occupez-vous de compléter cette fonction afin de trouver l'intersection avec un mesh.
-//
-// Référez-vous au PDF pour la paramétrisation pour les coordonnées UV.
-//
-// Pour plus de d'informations sur la géométrie, référez-vous à la classe object.h.
-//
+// Compute the intersection of a ray with a mesh
 bool Mesh::local_intersect(Ray ray, double t_min, double t_max, Intersection *hit) {
     bool did_hit = false;
     // Iterate over every triangle
@@ -276,10 +249,7 @@ bool Mesh::local_intersect(Ray ray, double t_min, double t_max, Intersection *hi
     return did_hit;
 }
 
-// @@@@@@ VOTRE CODE ICI
-// Occupez-vous de compléter cette fonction afin de trouver l'intersection avec un triangle.
-// S'il y a intersection, remplissez hit avec l'information sur la normale et les coordonnées texture.
-//
+// Compute the intersection of a ray with a triangle
 bool Mesh::intersect_triangle(Ray ray, double t_min, double t_max, Triangle const tri, Intersection *hit) {
     // Compute the edges of the triangle
     double3 const &p0 = this->positions[tri[0].pi];
@@ -353,9 +323,7 @@ bool Mesh::intersect_triangle(Ray ray, double t_min, double t_max, Triangle cons
     return true;
 }
 
-// @@@@@@ VOTRE CODE ICI
-// Occupez-vous de compléter cette fonction afin de calculer le AABB pour le Mesh.
-// Il faut que le AABB englobe minimalement notre objet à moins que l'énoncé prononce le contraire.
+// Compute the AABB for the mesh
 AABB Mesh::compute_aabb() {
     std::vector<double3> positions = this->positions;
 

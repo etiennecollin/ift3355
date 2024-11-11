@@ -1,7 +1,6 @@
 #include "aabb.h"
 
-// @@@@@@ VOTRE CODE ICI
-// Implémenter l'intersection d'un rayon avec un AABB dans l'intervalle décrit.
+// The intersection of a ray with an AABB in the described interval.
 // Source: Pete Shirley's blog, 2016/02/14
 // https://psgraphics.blogspot.com/2016/02/new-simple-ray-box-test-from-andrew.html
 bool AABB::intersect(Ray ray, double t_min, double t_max) {
@@ -33,8 +32,7 @@ bool AABB::intersect(Ray ray, double t_min, double t_max) {
     return true;
 }
 
-// @@@@@@ VOTRE CODE ICI
-// Implémenter la fonction qui permet de trouver les 8 coins de notre AABB.
+// Retrieve the 8 corners of the AABB
 std::vector<double3> retrieve_corners(AABB aabb) {
     return std::vector<double3>{
         double3{aabb.min[0], aabb.min[1], aabb.min[2]}, double3{aabb.min[0], aabb.min[1], aabb.max[2]},
@@ -43,8 +41,7 @@ std::vector<double3> retrieve_corners(AABB aabb) {
         double3{aabb.max[0], aabb.max[1], aabb.min[2]}, double3{aabb.max[0], aabb.max[1], aabb.max[2]}};
 };
 
-// @@@@@@ VOTRE CODE ICI
-// Implémenter la fonction afin de créer un AABB qui englobe tous les points.
+// Create an AABB given a list of points
 AABB construct_aabb(std::vector<double3> points) {
     // Get min and max in xyz
     double3 min = double3{DBL_MAX, DBL_MAX, DBL_MAX};

@@ -12,18 +12,18 @@ class AABB {
     double3 min;
     double3 max;
 
-    // Calcul l'intersection d'un rayon avec un AABB qui respecte l'intervalle de profondeur décrit.
+    // Compute the intersection of a ray with an AABB in the described depth interval.
     bool intersect(Ray ray, double t_min, double t_max);
 };
 
-// Retrouver les 8 coins associés au AABB.
+// Retrieve the 8 corners of the AABB.
 std::vector<double3> retrieve_corners(AABB aabb);
 
-// Construit un AABB à partir d'une série de points.
+// Create an AABB given a list of points.
 AABB construct_aabb(std::vector<double3> points);
 
-// Combine deux AABB afin de construire un AABB qui englobe les deux.
+// Combine two AABBs to build an AABB that encompasses both.
 AABB combine(AABB a, AABB b);
 
-// Détermine si le coin inférieur de b est plus grand que a par rapport à l'axe spécifiée.
+// Determine if the lower corner of b is greater than a with respect to the specified axis.
 bool compare(AABB a, AABB b, int axis);

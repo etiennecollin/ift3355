@@ -27,7 +27,6 @@ struct Camera {
           defocus_angle(0.0),
           focus_distance(0.0) {}
 
-    // Comme décrit dans les notes
     double fovy;
     double aspect;
 
@@ -44,21 +43,20 @@ struct Camera {
 struct CameraOrthographic {
     CameraOrthographic(void) : origin(-1.0, 0.0, 0.0), lookAt(0.0, 0.0, 0.0), minPosition(-1.0, -1.0, -1.0) {}
 
-    // Comme décrit dans les notes
     double3 origin;
     double3 lookAt;
     double3 minPosition;
 };
 
-// Une classe pour encapsuler tous les paramètres d'une lumière sphèrique.
-// Lorsque radius = 0, il s'agit d'une lumière ponctuelle.
+// A class that encapsulates all the parameters of a spherical light.
+// When radius = 0, it is a point light.
 class SphericalLight {
    public:
-    // Constructeurs
+    // Constructors
     SphericalLight();
     SphericalLight(double3 const& position, ParamList& params) : position(position) { init(params); }
 
-    // Initialise les attributs de la lumière avec la liste des paramètres données.
+    // Initialize the light attributes with the given parameter
     void init(ParamList& params) {
 #define SET_VEC3(_name)                                                                                   \
     _name = params[#_name].size() == 3 ? double3{params[#_name][0], params[#_name][1], params[#_name][2]} \
@@ -68,44 +66,42 @@ class SphericalLight {
         SET_FLOAT(radius)
     }
 
-    // Position de la lumière.
+    // Light position
     double3 position;
 
     // Emission
     double3 emission;
 
-    // Taille Sphérique de la source de lumière
+    // Spherecal radius of the light source
     double radius;
 };
 
-// Une classe qui stocke tous les paramètres, matériaux et objets
-// dans une scène que l'on cherche à rendre.
+// A class that stores all the parameters, materials, and objects in a scene that we are trying to render
 class Scene {
    public:
-    // Résolution (largeur/hauteur) de l'image de sortie, en pixels.
+    // Resolution (width/height) of the output image, in pixels
     int resolution[2];
 
-    // Le nombre de rayon à lancer par pixel
+    // The number of rays to cast per pixel
     double samples_per_pixel;
 
-    // Région de variation lors du sampling aléatoirement
+    // The radius of the jittering region when randomly sampling
     double jitter_radius;
 
-    // Le nombre maximal de récursion possible.
+    // The maximum number of recursions possible
     int max_ray_depth;
 
-    // La caméra utilisée durant le rendu de la scène.
+    // The camera used during the rendering of the scene
     Camera camera;
 
-    // Vecteur correspondant à la lumière ambiante de la scène
+    // Ambiant light vector of the scene
     double3 ambient_light;
 
-    // Liste des lumières sphériques.
+    // List of spherical lights
     std::vector<SphericalLight> lights;
 
-    // Liste des pointeurs vers les objets de la scène.
-    // Notez que la classe Object est abstraite, donc les items pointeront réellement
-    // vers des objets Spheres, Planes, Mehses, etc.
+    // List of pointers to the objects in the scene.
+    // Note that the Object class is abstract so the items will actually point to Spheres, Planes, Meshes, etc.
     IContainer* container;
 
     Scene() {
