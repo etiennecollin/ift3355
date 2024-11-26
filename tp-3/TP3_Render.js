@@ -179,4 +179,3 @@ TP3.Render = {
     scene.add(lineT);
   },
 };
-

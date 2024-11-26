@@ -15,10 +15,8 @@ class Node {
 
 TP3.Geometry = {
   simplifySkeleton: function (rootNode, rotationThreshold = 0.0001) {
-    console.log("haha");
     nodeStack = [rootNode];
     while (true) {
-      console.log("haha");
       if (length(nodeStack) == 0) {
         break;
       }

@@ -32,4 +32,3 @@ camera.position.z = 8;
 controls.target.y = 2;
 controls.maxPolarAngle = Math.PI / 2;
 controls.update();
-

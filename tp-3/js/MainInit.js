@@ -45,4 +45,3 @@ function clearScene() {
 
 window.addEventListener("resize", resize);
 resize();
-

@@ -440,4 +440,3 @@
     self.Parallel = Parallel;
   }
 })();
-
