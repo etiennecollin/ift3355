@@ -1,5 +1,3 @@
-const { root } = require("postcss");
-
 class Node {
   constructor(parentNode) {
     this.parentNode = parentNode; //Noeud parent
@@ -17,10 +15,8 @@ class Node {
 
 TP3.Geometry = {
   simplifySkeleton: function (rootNode, rotationThreshold = 0.0001) {
-    console.log("haha");
     nodeStack = [rootNode];
     while (true) {
-      console.log("haha");
       if (length(nodeStack) == 0) {
         break;
       }
@@ -45,8 +41,6 @@ TP3.Geometry = {
       }
     }
     return rootNode;
-
-    //TODO
   },
 
   generateSegmentsHermite: function (
