@@ -1,14 +1,14 @@
-(function() {
-  const isCommonJS = typeof module !== 'undefined' && module.exports;
-  const isNode = !(typeof window !== 'undefined' && this === window);
+(function () {
+  const isCommonJS = typeof module !== "undefined" && module.exports;
+  const isNode = !(typeof window !== "undefined" && this === window);
   var setImmediate =
     setImmediate ||
-    function(cb) {
+    function (cb) {
       setTimeout(cb, 0);
     };
   const Worker = isNode ? require(`${__dirname}/Worker.js`) : self.Worker;
   const URL =
-    typeof self !== 'undefined' ? (self.URL ? self.URL : self.webkitURL) : null;
+    typeof self !== "undefined" ? (self.URL ? self.URL : self.webkitURL) : null;
   const _supports = !!(isNode || self.Worker); // node always supports parallel
 
   function extend(from, to) {
@@ -27,7 +27,7 @@
     this._result = null;
   }
 
-  Operation.prototype.resolve = function(err, res) {
+  Operation.prototype.resolve = function (err, res) {
     if (!err) {
       this._resolved = 1;
       this._result = res;
@@ -48,7 +48,7 @@
     this._errCallbacks = [];
   };
 
-  Operation.prototype.then = function(cb, errCb) {
+  Operation.prototype.then = function (cb, errCb) {
     if (this._resolved === 1) {
       // result
       if (cb) {
@@ -78,11 +78,11 @@
   const defaults = {
     evalPath: isNode ? `${__dirname}/eval.js` : null,
     maxWorkers: isNode
-      ? require('os').cpus().length
+      ? require("os").cpus().length
       : navigator.hardwareConcurrency || 4,
     synchronous: true,
     env: {},
-    envNamespace: 'env'
+    envNamespace: "env",
   };
 
   function Parallel(data, options) {
@@ -95,13 +95,13 @@
   }
 
   // static method
-  Parallel.isSupported = function() {
+  Parallel.isSupported = function () {
     return _supports;
   };
 
-  Parallel.prototype.getWorkerSource = function(cb, env) {
+  Parallel.prototype.getWorkerSource = function (cb, env) {
     const that = this;
-    let preStr = '';
+    let preStr = "";
     let i = 0;
     if (!isNode && this.requiredScripts.length !== 0) {
       preStr += `importScripts("${this.requiredScripts.join('","')}");\r\n`;
@@ -127,18 +127,18 @@
     return `${preStr}self.onmessage = function(e) {var global = {}; global.${ns} = ${env};self.postMessage((${cb.toString()})(e.data))}`;
   };
 
-  Parallel.prototype.require = function() {
+  Parallel.prototype.require = function () {
     const args = Array.prototype.slice.call(arguments, 0);
     let func;
 
     for (let i = 0; i < args.length; i++) {
       func = args[i];
 
-      if (typeof func === 'string') {
+      if (typeof func === "string") {
         this.requiredScripts.push(func);
-      } else if (typeof func === 'function') {
+      } else if (typeof func === "function") {
         this.requiredFunctions.push({ fn: func });
-      } else if (typeof func === 'object') {
+      } else if (typeof func === "object") {
         this.requiredFunctions.push(func);
       }
     }
@@ -146,7 +146,7 @@
     return this;
   };
 
-  Parallel.prototype._spawnWorker = function(cb, env) {
+  Parallel.prototype._spawnWorker = function (cb, env) {
     let wrk;
     const src = this.getWorkerSource(cb, env);
     if (isNode) {
@@ -168,7 +168,7 @@
         } else if (!URL) {
           throw new Error("Can't create a blob URL in this browser!");
         } else {
-          const blob = new Blob([src], { type: 'text/javascript' });
+          const blob = new Blob([src], { type: "text/javascript" });
           const url = URL.createObjectURL(blob);
 
           wrk = new Worker(url);
@@ -187,7 +187,7 @@
     return wrk;
   };
 
-  Parallel.prototype.spawn = function(cb, env) {
+  Parallel.prototype.spawn = function (cb, env) {
     const that = this;
     const newOp = new Operation();
     let timeout;
@@ -195,26 +195,25 @@
     env = extend(this.options.env, env || {});
 
     this.operation.then(() => {
-
-      if(env.timeout) {
-        timeout = setTimeout(function() {
-          if(!newOp.resolved) {
+      if (env.timeout) {
+        timeout = setTimeout(function () {
+          if (!newOp.resolved) {
             wrk.terminate();
-            newOp.resolve(new Error('Operation timed out!'), null);
+            newOp.resolve(new Error("Operation timed out!"), null);
           }
         }, env.timeout);
       }
-      
+
       const wrk = that._spawnWorker(cb, env);
       if (wrk !== undefined) {
-        wrk.onmessage = function(msg) {
-          if(timeout) clearTimeout(timeout);
+        wrk.onmessage = function (msg) {
+          if (timeout) clearTimeout(timeout);
           wrk.terminate();
           that.data = msg.data;
           newOp.resolve(null, that.data);
         };
-        wrk.onerror = function(e) {
-          if(timeout) clearTimeout(timeout);
+        wrk.onerror = function (e) {
+          if (timeout) clearTimeout(timeout);
           wrk.terminate();
           newOp.resolve(e, null);
         };
@@ -230,7 +229,7 @@
         });
       } else {
         throw new Error(
-          'Workers do not exist and synchronous operation not allowed!'
+          "Workers do not exist and synchronous operation not allowed!",
         );
       }
     });
@@ -238,17 +237,17 @@
     return this;
   };
 
-  Parallel.prototype._spawnMapWorker = function(i, cb, done, env, wrk) {
+  Parallel.prototype._spawnMapWorker = function (i, cb, done, env, wrk) {
     const that = this;
 
     if (!wrk) wrk = that._spawnWorker(cb, env);
 
     if (wrk !== undefined) {
-      wrk.onmessage = function(msg) {
+      wrk.onmessage = function (msg) {
         that.data[i] = msg.data;
         done(null, wrk);
       };
-      wrk.onerror = function(e) {
+      wrk.onerror = function (e) {
         wrk.terminate();
         done(e);
       };
@@ -260,12 +259,12 @@
       });
     } else {
       throw new Error(
-        'Workers do not exist and synchronous operation not allowed!'
+        "Workers do not exist and synchronous operation not allowed!",
       );
     }
   };
 
-  Parallel.prototype.map = function(cb, env) {
+  Parallel.prototype.map = function (cb, env) {
     env = extend(this.options.env, env || {});
 
     if (!this.data.length) {
@@ -298,24 +297,24 @@
           that._spawnMapWorker(startedOps, cb, done, env);
         }
       },
-      err => {
+      (err) => {
         newOp.resolve(err, null);
-      }
+      },
     );
     this.operation = newOp;
     return this;
   };
 
-  Parallel.prototype._spawnReduceWorker = function(data, cb, done, env, wrk) {
+  Parallel.prototype._spawnReduceWorker = function (data, cb, done, env, wrk) {
     const that = this;
     if (!wrk) wrk = that._spawnWorker(cb, env);
 
     if (wrk !== undefined) {
-      wrk.onmessage = function(msg) {
+      wrk.onmessage = function (msg) {
         that.data[that.data.length] = msg.data;
         done(null, wrk);
       };
-      wrk.onerror = function(e) {
+      wrk.onerror = function (e) {
         wrk.terminate();
         done(e, null);
       };
@@ -327,12 +326,12 @@
       });
     } else {
       throw new Error(
-        'Workers do not exist and synchronous operation not allowed!'
+        "Workers do not exist and synchronous operation not allowed!",
       );
     }
   };
 
-  Parallel.prototype.reduce = function(cb, env) {
+  Parallel.prototype.reduce = function (cb, env) {
     env = extend(this.options.env, env || {});
 
     if (!this.data.length) {
@@ -356,7 +355,7 @@
           cb,
           done,
           env,
-          wrk
+          wrk,
         );
         that.data.splice(0, 2);
       } else if (wrk) wrk.terminate();
@@ -377,7 +376,7 @@
             [that.data[i * 2], that.data[i * 2 + 1]],
             cb,
             done,
-            env
+            env,
           );
         }
 
@@ -388,10 +387,10 @@
     return this;
   };
 
-  Parallel.prototype.then = function(cb, errCb) {
+  Parallel.prototype.then = function (cb, errCb) {
     const that = this;
     const newOp = new Operation();
-    errCb = typeof errCb === 'function' ? errCb : function() {};
+    errCb = typeof errCb === "function" ? errCb : function () {};
 
     this.operation.then(
       () => {
@@ -418,7 +417,7 @@
           }
         }
       },
-      err => {
+      (err) => {
         if (errCb) {
           const retData = errCb(err);
           if (retData !== undefined) {
@@ -429,7 +428,7 @@
         } else {
           newOp.resolve(null, err);
         }
-      }
+      },
     );
     this.operation = newOp;
     return this;
