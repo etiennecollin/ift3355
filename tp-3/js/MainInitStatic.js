@@ -1,12 +1,17 @@
 var scene = new THREE.Scene();
-var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+var camera = new THREE.PerspectiveCamera(
+  75,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  1000,
+);
 
-var renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize( window.innerWidth, window.innerHeight );
+var renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-document.body.appendChild( renderer.domElement );
+document.body.appendChild(renderer.domElement);
 
-var controls = new THREE.OrbitControls( camera, renderer.domElement );
+var controls = new THREE.OrbitControls(camera, renderer.domElement);
 
 camera.position.y = 3;
 camera.position.z = 6;
@@ -21,16 +26,17 @@ function resize() {
 }
 
 function clearScene() {
-	while(scene.children.length > 0){
-		if (scene.children[0].geometry != null) {
-			scene.children[0].geometry.dispose();
-		}
-		if (scene.children[0].material != null) {
-			scene.children[0].material.dispose();
-		}
-		scene.remove(scene.children[0]); 
-	}
+  while (scene.children.length > 0) {
+    if (scene.children[0].geometry != null) {
+      scene.children[0].geometry.dispose();
+    }
+    if (scene.children[0].material != null) {
+      scene.children[0].material.dispose();
+    }
+    scene.remove(scene.children[0]);
+  }
 }
 
-window.addEventListener('resize', resize);
+window.addEventListener("resize", resize);
 resize();
+
