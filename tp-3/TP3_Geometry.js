@@ -15,29 +15,38 @@ class Node {
 
 TP3.Geometry = {
   simplifySkeleton: function (rootNode, rotationThreshold = 0.0001) {
+    console.log(rootNode)
     nodeStack = [rootNode];
     while (true) {
-      if (length(nodeStack) == 0) {
+      if (nodeStack.length == 0) {
         break;
       }
-      nowNode = nodeStack.shift();
-      if (length(nowNode.childNode) > 1) {
-        for (i = 0; i < length(nowNode.childNode); i++) {
-          nodeStack += nowNode.childNode[i];
+      nowNode = nodeStack[0] ;
+      console.log(nowNode)
+      nodeStack.shift();
+      if (nowNode.childNode.length > 1) {
+        for (i = 0; i < nowNode.childNode.length; i++) {
+          nodeStack.push(nowNode.childNode[i]);
         }
         continue;
-      } else if (length(nowNode.childNode) == 1) {
-        vec1 = nowNode.p0 - nowNode.p1;
-        vec2 = nowNode.childNode[0].p0 - nowNode.childNode[0].p1;
+      } else if (nowNode.childNode.length == 1) {
+        p0 = nowNode.p0.clone()
+        p1 = nowNode.p1.clone()
+        p0c = nowNode.childNode[0].p0.clone()
+        p1c = nowNode.childNode[0].p1.clone()
+        vec1 = p1.sub(p0)
+        vec2 = p1c.sub(p0c)
         angle = this.findRotation(vec1, vec2)[1];
         if (angle < rotationThreshold) {
           nowNode.p1 = nowNode.childNode[0].p1;
           nowNode.a1 = nowNode.childNode[0].a1;
           nowNode.childNode = nowNode.childNode[0].childNode;
-          nodeStack += nowNode;
+          nowNode.childNode[0].parentNode=nowNode
+          nodeStack.push(nowNode);
           continue;
         }
-        nodeStack += nowNode.childNode[0];
+        else{nodeStack.push(nowNode.childNode[0]);}
+        
       }
     }
     return rootNode;
