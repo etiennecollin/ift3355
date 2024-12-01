@@ -15,14 +15,12 @@ class Node {
 
 TP3.Geometry = {
   simplifySkeleton: function (rootNode, rotationThreshold = 0.0001) {
-    console.log(rootNode)
     nodeStack = [rootNode];
     while (true) {
       if (nodeStack.length == 0) {
         break;
       }
       nowNode = nodeStack[0] ;
-      console.log(nowNode)
       nodeStack.shift();
       if (nowNode.childNode.length > 1) {
         for (i = 0; i < nowNode.childNode.length; i++) {

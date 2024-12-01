@@ -9,6 +9,32 @@ TP3.Render = {
     applesProbability = 0.05,
     matrix = new THREE.Matrix4(),
   ) {
+    branches=[rootNode]
+    geomliste=[]
+    while(branches.length>0){
+      nowBranche=branches[0]
+      branches.shift()
+      for(i=0;i<nowBranche.childNode.length;i++){
+        branches.push(nowBranche.childNode[i])
+      }
+      bois=new THREE.CylinderBufferGeometry(nowBranche.a1, nowBranche.a0, nowBranche.p0.distanceTo(nowBranche.p1), radialDivisions)
+      translate= new THREE.Matrix4()
+      translate.set(1,0,0,(nowBranche.p0.x+nowBranche.p1.x)/2, 0, 1, 0, (nowBranche.p0.y+nowBranche.p1.y)/2,0,0,1,(nowBranche.p0.z+nowBranche.p1.z)/2,0,0,0,1)
+      v1=new THREE.Vector3()
+      v1.set(0,1,0)
+      v2=new THREE.Vector3()
+      v2.subVectors(nowBranche.p1, nowBranche.p0).normalize()
+      quat=new THREE.Quaternion();
+      quat.setFromUnitVectors(v1,v2)
+      rot=new THREE.Matrix4()
+      rot.makeRotationFromQuaternion(quat)
+      bois.applyMatrix4(rot)
+      bois.applyMatrix4(translate)
+      geomliste.push(bois)
+    }
+    touteGeom=THREE.BufferGeometryUtils.mergeBufferGeometries(geomliste)
+    cilindre= new THREE.Mesh(touteGeom, new  THREE.MeshLambertMaterial({color: 0x8B5A2B}))
+    scene.add(cilindre)
     //TODO
   },
 
