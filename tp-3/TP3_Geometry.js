@@ -55,10 +55,39 @@ TP3.Geometry = {
     lengthDivisions = 4,
     radialDivisions = 8,
   ) {
+    
     //TODO
   },
 
   hermite: function (h0, h1, v0, v1, t) {
+    h00 = 2 * t ** 3 - 3 * t ** 2 + 1;
+    h10 = t ** 3 - 2 * t ** 2 + t;
+    h01 = -2 * t ** 3 + 3 * t ** 2;
+    h11 = t ** 3 - t ** 2;
+
+
+    p = [
+      h00 * h0[0] + h01 * h1[0] + h10 * v0[0] + h11 * v1[0],
+      h00 * h0[1] + h01 * h1[1] + h10 * v0[1] + h11 * v1[1],
+      ];
+
+
+    h00Prime = 6 * t ** 2 - 6 * t;
+    h10Prime = 3 * t ** 2 - 4 * t + 1;
+    h01Prime = -6 * t ** 2 + 6 * t;
+    h11Prime = 3 * t ** 2 - 2 * t;
+
+
+    dp = [
+      h00Prime * h0[0] + h01Prime * h1[0] + h10Prime * v0[0] + h11Prime * v1[0],
+      h00Prime * h0[1] + h01Prime * h1[1] + h10Prime * v0[1] + h11Prime * v1[1],
+      ];
+
+
+    dpLength = Math.sqrt(dp[0] ** 2 + dp[1] ** 2);
+    dp = dp.map((component) => component / dpLength);
+
+    return [p, dp];
     //TODO
   },
 
