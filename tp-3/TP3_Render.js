@@ -9,33 +9,159 @@ TP3.Render = {
     applesProbability = 0.05,
     matrix = new THREE.Matrix4(),
   ) {
-    branches=[rootNode]
-    geomliste=[]
-    while(branches.length>0){
-      nowBranche=branches[0]
-      branches.shift()
-      for(i=0;i<nowBranche.childNode.length;i++){
-        branches.push(nowBranche.childNode[i])
+    branches = [rootNode];
+    branchBuffers = [];
+    leafBuffers = [];
+    appleBuffers = [];
+
+    // Iterate over the tree
+    while (branches.length > 0) {
+      currentBranch = branches[0];
+      branches.shift();
+
+      // Push child nodes to the stack
+      for (i = 0; i < currentBranch.childNode.length; i++) {
+        branches.push(currentBranch.childNode[i]);
       }
-      bois=new THREE.CylinderBufferGeometry(nowBranche.a1, nowBranche.a0, nowBranche.p0.distanceTo(nowBranche.p1), radialDivisions)
-      translate= new THREE.Matrix4()
-      translate.set(1,0,0,(nowBranche.p0.x+nowBranche.p1.x)/2, 0, 1, 0, (nowBranche.p0.y+nowBranche.p1.y)/2,0,0,1,(nowBranche.p0.z+nowBranche.p1.z)/2,0,0,0,1)
-      v1=new THREE.Vector3()
-      v1.set(0,1,0)
-      v2=new THREE.Vector3()
-      v2.subVectors(nowBranche.p1, nowBranche.p0).normalize()
-      quat=new THREE.Quaternion();
-      quat.setFromUnitVectors(v1,v2)
-      rot=new THREE.Matrix4()
-      rot.makeRotationFromQuaternion(quat)
-      bois.applyMatrix4(rot)
-      bois.applyMatrix4(translate)
-      geomliste.push(bois)
+
+      // Create a cylinder geometry
+      wood = new THREE.CylinderBufferGeometry(
+        currentBranch.a1,
+        currentBranch.a0,
+        currentBranch.p0.distanceTo(currentBranch.p1),
+        radialDivisions,
+      );
+
+      // Create the translation matrix
+      translate = new THREE.Matrix4().set(
+        1,
+        0,
+        0,
+        (currentBranch.p0.x + currentBranch.p1.x) / 2,
+        0,
+        1,
+        0,
+        (currentBranch.p0.y + currentBranch.p1.y) / 2,
+        0,
+        0,
+        1,
+        (currentBranch.p0.z + currentBranch.p1.z) / 2,
+        0,
+        0,
+        0,
+        1,
+      );
+
+      // Get the direction of the branch
+      branchDirection = new THREE.Vector3()
+        .subVectors(currentBranch.p1, currentBranch.p0)
+        .normalize();
+
+      // Get angle between the UP and the direction of the branch
+      quat = new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3().set(0, 1, 0),
+        branchDirection,
+      );
+
+      // Create the rotation matrix
+      rotation = new THREE.Matrix4().makeRotationFromQuaternion(quat);
+
+      // Apply the transformations
+      wood.applyMatrix4(rotation);
+      wood.applyMatrix4(translate);
+      wood.applyMatrix4(matrix);
+      branchBuffers.push(wood);
+
+      // Check if branch needs leaves
+      if (currentBranch.a0 < alpha * leavesCutoff) {
+        // Add leavesDensity leaves to the branch
+        for (i = 0; i < leavesDensity; i++) {
+          leaf = new THREE.PlaneBufferGeometry(alpha, alpha);
+
+          // Random translation within alpha/2 radius
+          randomOffset = new THREE.Vector3(
+            (Math.random() - 0.5) * alpha,
+            (Math.random() - 0.5) * alpha,
+            (Math.random() - 0.5) * alpha,
+          );
+
+          // Random rotation for the leaf
+          randomQuat = new THREE.Quaternion().setFromEuler(
+            new THREE.Euler(
+              Math.random() * Math.PI,
+              Math.random() * Math.PI,
+              Math.random() * Math.PI,
+            ),
+          );
+
+          leafRotation = new THREE.Matrix4().makeRotationFromQuaternion(
+            randomQuat,
+          );
+
+          leafTranslation = new THREE.Matrix4().makeTranslation(
+            currentBranch.p1.x + randomOffset.x,
+            currentBranch.p1.y + randomOffset.y,
+            currentBranch.p1.z + randomOffset.z,
+          );
+
+          // Apply transformations to the leaf
+          leaf.applyMatrix4(leafRotation);
+          leaf.applyMatrix4(leafTranslation);
+          leaf.applyMatrix4(matrix);
+          leafBuffers.push(leaf);
+        }
+      }
+
+      // Add apples if branch width meets criteria
+      if (
+        currentBranch.a0 < alpha * leavesCutoff &&
+        Math.random() < applesProbability
+      ) {
+        apple = new THREE.BoxBufferGeometry(alpha, alpha, alpha);
+
+        // Random translation within alpha/2 radius
+        randomOffset = new THREE.Vector3(
+          (Math.random() - 0.5) * alpha,
+          (Math.random() - 0.5) * alpha,
+          (Math.random() - 0.5) * alpha,
+        );
+
+        appleTranslation = new THREE.Matrix4().makeTranslation(
+          currentBranch.p1.x + randomOffset.x,
+          currentBranch.p1.y + randomOffset.y,
+          currentBranch.p1.z + randomOffset.z,
+        );
+
+        // Apply transformations to the apple
+        apple.applyMatrix4(appleTranslation);
+        apple.applyMatrix4(matrix);
+        appleBuffers.push(apple);
+      }
     }
-    touteGeom=THREE.BufferGeometryUtils.mergeBufferGeometries(geomliste)
-    cilindre= new THREE.Mesh(touteGeom, new  THREE.MeshLambertMaterial({color: 0x8B5A2B}))
-    scene.add(cilindre)
-    //TODO
+
+    // Merge the geometries and create the mesh
+    branchesMerged =
+      THREE.BufferGeometryUtils.mergeBufferGeometries(branchBuffers);
+    branchesMesh = new THREE.Mesh(
+      branchesMerged,
+      new THREE.MeshLambertMaterial({ color: 0x8b5a2b }),
+    );
+    scene.add(branchesMesh);
+
+    leavesMerged = THREE.BufferGeometryUtils.mergeBufferGeometries(leafBuffers);
+    leavesMesh = new THREE.Mesh(
+      leavesMerged,
+      new THREE.MeshPhongMaterial({ color: 0x3a5f0b }),
+    );
+    scene.add(leavesMesh);
+
+    applesMerged =
+      THREE.BufferGeometryUtils.mergeBufferGeometries(appleBuffers);
+    applesMesh = new THREE.Mesh(
+      applesMerged,
+      new THREE.MeshPhongMaterial({ color: 0x5f0b0b }),
+    );
+    scene.add(applesMesh);
   },
 
   drawTreeHermite: function (
