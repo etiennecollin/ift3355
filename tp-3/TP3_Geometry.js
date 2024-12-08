@@ -16,37 +16,49 @@ class Node {
 TP3.Geometry = {
   simplifySkeleton: function (rootNode, rotationThreshold = 0.0001) {
     nodeStack = [rootNode];
+
+    // Iterate over the tree
     while (true) {
+      // If the stack is empty, we are done
       if (nodeStack.length == 0) {
         break;
       }
-      nowNode = nodeStack[0] ;
+
+      // If there is more than a node in the stack
+      currentNode = nodeStack[0];
       nodeStack.shift();
-      if (nowNode.childNode.length > 1) {
-        for (i = 0; i < nowNode.childNode.length; i++) {
-          nodeStack.push(nowNode.childNode[i]);
+      if (currentNode.childNode.length > 1) {
+        for (i = 0; i < currentNode.childNode.length; i++) {
+          nodeStack.push(currentNode.childNode[i]);
         }
         continue;
-      } else if (nowNode.childNode.length == 1) {
-        p0 = nowNode.p0.clone()
-        p1 = nowNode.p1.clone()
-        p0c = nowNode.childNode[0].p0.clone()
-        p1c = nowNode.childNode[0].p1.clone()
-        vec1 = p1.sub(p0)
-        vec2 = p1c.sub(p0c)
+      }
+
+      // If there is only one child node
+      if (currentNode.childNode.length == 1) {
+        p0 = currentNode.p0.clone();
+        p1 = currentNode.p1.clone();
+        p0c = currentNode.childNode[0].p0.clone();
+        p1c = currentNode.childNode[0].p1.clone();
+        vec1 = p1.sub(p0);
+        vec2 = p1c.sub(p0c);
         angle = this.findRotation(vec1, vec2)[1];
+
+        // If the angle is smaller than the threshold, we simplify the tree
         if (angle < rotationThreshold) {
-          nowNode.p1 = nowNode.childNode[0].p1;
-          nowNode.a1 = nowNode.childNode[0].a1;
-          nowNode.childNode = nowNode.childNode[0].childNode;
-          nowNode.childNode[0].parentNode=nowNode
-          nodeStack.push(nowNode);
+          currentNode.p1 = currentNode.childNode[0].p1;
+          currentNode.a1 = currentNode.childNode[0].a1;
+          currentNode.childNode = currentNode.childNode[0].childNode;
+          currentNode.childNode[0].parentNode = currentNode;
+          nodeStack.push(currentNode);
           continue;
+        } else {
+          nodeStack.push(currentNode.childNode[0]);
         }
-        else{nodeStack.push(nowNode.childNode[0]);}
-        
       }
     }
+
+    // Return the rootNode
     return rootNode;
   },
 
@@ -55,7 +67,6 @@ TP3.Geometry = {
     lengthDivisions = 4,
     radialDivisions = 8,
   ) {
-    
     //TODO
   },
 
@@ -65,30 +76,25 @@ TP3.Geometry = {
     h01 = -2 * t ** 3 + 3 * t ** 2;
     h11 = t ** 3 - t ** 2;
 
-
     p = [
       h00 * h0[0] + h01 * h1[0] + h10 * v0[0] + h11 * v1[0],
       h00 * h0[1] + h01 * h1[1] + h10 * v0[1] + h11 * v1[1],
-      ];
-
+    ];
 
     h00Prime = 6 * t ** 2 - 6 * t;
     h10Prime = 3 * t ** 2 - 4 * t + 1;
     h01Prime = -6 * t ** 2 + 6 * t;
     h11Prime = 3 * t ** 2 - 2 * t;
 
-
     dp = [
       h00Prime * h0[0] + h01Prime * h1[0] + h10Prime * v0[0] + h11Prime * v1[0],
       h00Prime * h0[1] + h01Prime * h1[1] + h10Prime * v0[1] + h11Prime * v1[1],
-      ];
-
+    ];
 
     dpLength = Math.sqrt(dp[0] ** 2 + dp[1] ** 2);
     dp = dp.map((component) => component / dpLength);
 
     return [p, dp];
-    //TODO
   },
 
   // Trouver l'axe et l'angle de rotation entre deux vecteurs
