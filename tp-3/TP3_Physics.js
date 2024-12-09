@@ -62,7 +62,7 @@ TP3.Physics = {
 
     // Stocker la direction originale
     if (!node.originalDirection) {
-      node.originalDirection = originalDirection;
+      node.originalDirection = originalDirection.clone();
     }
 
     const newDirection = p1New.clone().sub(node.p0).normalize();
@@ -89,13 +89,15 @@ TP3.Physics = {
     node.vel = trueVelocity;
 
     // Calculer l'angle pour la force de restitution
-    const angle = originalDirection.angleTo(newDirection);
+    // Nous utilisons l'angle par rapport à la direction à t=0 de la branche.
+    // Nous devons donc changer le coefficient a0*1000 par a0*33.
+    const angle = node.originalDirection.angleTo(newDirection);
     const normal = newDirection.clone().cross(originalDirection).normalize();
-    const restitutionDirection = originalDirection
+    const restitutionDirection = node.originalDirection
       .clone()
       .applyAxisAngle(normal, Math.pow(angle, 2));
     const restitutionVelocity = restitutionDirection.multiplyScalar(
-      node.a0 * 1000,
+      node.a0 * 33,
     );
     node.vel.add(restitutionVelocity);
 
