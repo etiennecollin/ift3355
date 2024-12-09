@@ -16,12 +16,11 @@ TP3.Render = {
 
     // Iterate over the tree
     while (branches.length > 0) {
-      currentBranch = branches[0];
-      branches.shift();
+      currentBranch = branches.shift();
 
-      // Push child nodes to the stack
-      for (i = 0; i < currentBranch.childNode.length; i++) {
-        branches.push(currentBranch.childNode[i]);
+      // Add children to the list of branches to process
+      for (child of currentBranch.childNode) {
+        branches.push(child);
       }
 
       // Create a cylinder geometry
@@ -151,7 +150,7 @@ TP3.Render = {
     leavesMerged = THREE.BufferGeometryUtils.mergeBufferGeometries(leafBuffers);
     leavesMesh = new THREE.Mesh(
       leavesMerged,
-      new THREE.MeshPhongMaterial({ color: 0x3a5f0b }),
+      new THREE.MeshPhongMaterial({ color: 0x3a5f0b, side: THREE.DoubleSide }),
     );
     scene.add(leavesMesh);
 
@@ -173,7 +172,98 @@ TP3.Render = {
     applesProbability = 0.05,
     matrix = new THREE.Matrix4(),
   ) {
-    //TODO
+    const branches = [rootNode];
+    const geometry = new THREE.BufferGeometry();
+    const vertices = [];
+    const indices = [];
+
+    while (branches.length > 0) {
+      const currentBranch = branches.shift();
+
+      // Add child branches to the queue
+      for (const child of currentBranch.childNode) {
+        branches.push(child);
+      }
+
+      // Connect adjacent sections
+      const sections = currentBranch.sections;
+      for (let i = 0; i < sections.length - 1; i++) {
+        const sectionA = sections[i];
+        const sectionB = sections[i + 1];
+
+        // Create faces between sectionA and sectionB
+        for (let j = 0; j < sectionA.length; j++) {
+          const nextJ = (j + 1) % sectionA.length;
+
+          // Triangle 1
+          vertices.push(...sectionA[j].toArray());
+          vertices.push(...sectionA[nextJ].toArray());
+          vertices.push(...sectionB[j].toArray());
+          indices.push(
+            vertices.length / 3 - 1,
+            vertices.length / 3 - 2,
+            vertices.length / 3 - 3,
+          );
+
+          // Triangle 2
+          vertices.push(...sectionA[nextJ].toArray());
+          vertices.push(...sectionB[nextJ].toArray());
+          vertices.push(...sectionB[j].toArray());
+          indices.push(
+            vertices.length / 3 - 1,
+            vertices.length / 3 - 2,
+            vertices.length / 3 - 3,
+          );
+        }
+      }
+
+      // Cap the tree branches
+      if (currentBranch.childNode.length == 0 || !currentBranch.parentNode) {
+        let section = null;
+        if (currentBranch.childNode.length == 0) {
+          section = sections[sections.length - 1];
+        } else {
+          section = sections[0];
+        }
+
+        // Get the center of the last section
+        const center = section
+          .reduce((sum, point) => sum.add(point), new THREE.Vector3())
+          .divideScalar(section.length);
+        const centerIndex = vertices.length / 3;
+        vertices.push(...center.toArray());
+
+        for (let j = 0; j < section.length; j++) {
+          const nextJ = (j + 1) % section.length;
+
+          vertices.push(...section[j].toArray());
+          vertices.push(...section[nextJ].toArray());
+          indices.push(
+            centerIndex,
+            vertices.length / 3 - 1,
+            vertices.length / 3 - 2,
+          );
+        }
+      }
+    }
+
+    // Build geometry and mesh
+    geometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(vertices, 3),
+    );
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+
+    const material = new THREE.MeshLambertMaterial({
+      color: 0x8b4513,
+      // side: THREE.DoubleSide,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+
+    scene.add(mesh);
+
+    return [geometry];
   },
 
   updateTreeHermite: function (
