@@ -173,9 +173,10 @@ TP3.Render = {
     matrix = new THREE.Matrix4(),
   ) {
     const branches = [rootNode];
-    const geometry = new THREE.BufferGeometry();
-    const vertices = [];
-    const indices = [];
+    const branchVertices = [];
+    const branchIndices = [];
+    const leafBuffers = [];
+    const appleBuffers = [];
 
     while (branches.length > 0) {
       const currentBranch = branches.shift();
@@ -196,23 +197,23 @@ TP3.Render = {
           const nextJ = (j + 1) % sectionA.length;
 
           // Triangle 1
-          vertices.push(...sectionA[j].toArray());
-          vertices.push(...sectionA[nextJ].toArray());
-          vertices.push(...sectionB[j].toArray());
-          indices.push(
-            vertices.length / 3 - 1,
-            vertices.length / 3 - 2,
-            vertices.length / 3 - 3,
+          branchVertices.push(...sectionA[j].toArray());
+          branchVertices.push(...sectionA[nextJ].toArray());
+          branchVertices.push(...sectionB[j].toArray());
+          branchIndices.push(
+            branchVertices.length / 3 - 1,
+            branchVertices.length / 3 - 2,
+            branchVertices.length / 3 - 3,
           );
 
           // Triangle 2
-          vertices.push(...sectionA[nextJ].toArray());
-          vertices.push(...sectionB[nextJ].toArray());
-          vertices.push(...sectionB[j].toArray());
-          indices.push(
-            vertices.length / 3 - 1,
-            vertices.length / 3 - 2,
-            vertices.length / 3 - 3,
+          branchVertices.push(...sectionA[nextJ].toArray());
+          branchVertices.push(...sectionB[nextJ].toArray());
+          branchVertices.push(...sectionB[j].toArray());
+          branchIndices.push(
+            branchVertices.length / 3 - 1,
+            branchVertices.length / 3 - 2,
+            branchVertices.length / 3 - 3,
           );
         }
       }
@@ -230,40 +231,136 @@ TP3.Render = {
         const center = section
           .reduce((sum, point) => sum.add(point), new THREE.Vector3())
           .divideScalar(section.length);
-        const centerIndex = vertices.length / 3;
-        vertices.push(...center.toArray());
+        const centerIndex = branchVertices.length / 3;
+        branchVertices.push(...center.toArray());
 
         for (let j = 0; j < section.length; j++) {
           const nextJ = (j + 1) % section.length;
 
-          vertices.push(...section[j].toArray());
-          vertices.push(...section[nextJ].toArray());
-          indices.push(
+          branchVertices.push(...section[j].toArray());
+          branchVertices.push(...section[nextJ].toArray());
+          branchIndices.push(
             centerIndex,
-            vertices.length / 3 - 1,
-            vertices.length / 3 - 2,
+            branchVertices.length / 3 - 1,
+            branchVertices.length / 3 - 2,
           );
         }
       }
+
+      // Check if branch needs leaves
+      if (currentBranch.a0 < alpha * leavesCutoff) {
+        // Add leavesDensity leaves to the branch
+        for (i = 0; i < leavesDensity; i++) {
+          // Create an equilateral triangle
+          const leaf = new THREE.BufferGeometry();
+          const vertices = new Float32Array([
+            0,
+            alpha,
+            0, // Top vertex
+            -alpha / Math.sqrt(3),
+            -alpha / 2,
+            0, // Bottom-left vertex
+            alpha / Math.sqrt(3),
+            -alpha / 2,
+            0, // Bottom-right vertex
+          ]);
+          leaf.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
+
+          // Random translation within alpha/2 radius
+          randomOffset = new THREE.Vector3(
+            (Math.random() - 0.5) * alpha,
+            (Math.random() - 0.5) * alpha,
+            (Math.random() - 0.5) * alpha,
+          );
+
+          // Random rotation for the leaf
+          randomQuat = new THREE.Quaternion().setFromEuler(
+            new THREE.Euler(
+              Math.random() * Math.PI,
+              Math.random() * Math.PI,
+              Math.random() * Math.PI,
+            ),
+          );
+
+          leafRotation = new THREE.Matrix4().makeRotationFromQuaternion(
+            randomQuat,
+          );
+
+          leafTranslation = new THREE.Matrix4().makeTranslation(
+            currentBranch.p1.x + randomOffset.x,
+            currentBranch.p1.y + randomOffset.y,
+            currentBranch.p1.z + randomOffset.z,
+          );
+
+          // Apply transformations to the leaf
+          leaf.applyMatrix4(leafRotation);
+          leaf.applyMatrix4(leafTranslation);
+          leaf.applyMatrix4(matrix);
+          leafBuffers.push(leaf);
+        }
+      }
+      // Add apples if branch width meets criteria
+      if (
+        currentBranch.a0 < alpha * leavesCutoff &&
+        Math.random() < applesProbability
+      ) {
+        apple = new THREE.SphereBufferGeometry(alpha / 2);
+
+        // Random translation within alpha/2 radius
+        randomOffset = new THREE.Vector3(
+          (Math.random() - 0.5) * alpha,
+          (Math.random() - 0.5) * alpha,
+          (Math.random() - 0.5) * alpha,
+        );
+
+        appleTranslation = new THREE.Matrix4().makeTranslation(
+          currentBranch.p1.x + randomOffset.x,
+          currentBranch.p1.y + randomOffset.y,
+          currentBranch.p1.z + randomOffset.z,
+        );
+
+        // Apply transformations to the apple
+        apple.applyMatrix4(appleTranslation);
+        apple.applyMatrix4(matrix);
+        appleBuffers.push(apple);
+      }
     }
 
-    // Build geometry and mesh
-    geometry.setAttribute(
+    // Add branches to the scene
+    const branchGeometry = new THREE.BufferGeometry();
+    branchGeometry.setAttribute(
       "position",
-      new THREE.Float32BufferAttribute(vertices, 3),
+      new THREE.Float32BufferAttribute(branchVertices, 3),
     );
-    geometry.setIndex(indices);
-    geometry.computeVertexNormals();
-
-    const material = new THREE.MeshLambertMaterial({
+    branchGeometry.setIndex(branchIndices);
+    branchGeometry.computeVertexNormals();
+    const branchMaterial = new THREE.MeshLambertMaterial({
       color: 0x8b4513,
-      // side: THREE.DoubleSide,
+      side: THREE.DoubleSide,
     });
-    const mesh = new THREE.Mesh(geometry, material);
+    const branchMesh = new THREE.Mesh(branchGeometry, branchMaterial);
+    scene.add(branchMesh);
 
-    scene.add(mesh);
+    // Add leaves to the scene
+    leavesGeometry =
+      THREE.BufferGeometryUtils.mergeBufferGeometries(leafBuffers);
+    leavesGeometry.computeVertexNormals();
+    leavesMesh = new THREE.Mesh(
+      leavesGeometry,
+      new THREE.MeshPhongMaterial({ color: 0x3a5f0b, side: THREE.DoubleSide }),
+    );
+    scene.add(leavesMesh);
 
-    return [geometry];
+    // Add apples to the scene
+    applesGeometry =
+      THREE.BufferGeometryUtils.mergeBufferGeometries(appleBuffers);
+    applesMesh = new THREE.Mesh(
+      applesGeometry,
+      new THREE.MeshPhongMaterial({ color: 0x5f0b0b }),
+    );
+    scene.add(applesMesh);
+
+    return [branchGeometry, leavesGeometry, applesGeometry];
   },
 
   updateTreeHermite: function (
