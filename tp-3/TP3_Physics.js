@@ -109,24 +109,40 @@ TP3.Physics = {
 
     // Appel recursif sur les enfants
     for (var i = 0; i < node.childNode.length; i++) {
-      // Appliquer la matrice de transformation au nœud enfant
+      // Appliquer la matrice de transformation au noeud enfant
       const child = node.childNode[i];
 
-      // Calculer la nouvelle position de p1 pour l'enfant
-      childVector = child.p1.clone().sub(child.p0);
-      const childLength = childVector.length();
-      const childDirection = childVector.normalize();
-      const childDirectionTransformed = childDirection
-        .clone()
-        .applyMatrix4(rotationMatrix)
-        .multiplyScalar(childLength);
+      // Bring p0 to origin
+      const translation = new THREE.Matrix4().makeTranslation(
+        -child.p0.x,
+        -child.p0.y,
+        -child.p0.z,
+      );
 
-      const childNewP0 = node.p1.clone();
-      const childNewP1 = childNewP0.clone().add(childDirectionTransformed);
+      // Bring p0 back to its place
+      const translation_inverse = new THREE.Matrix4().makeTranslation(
+        child.p0.x,
+        child.p0.y,
+        child.p0.z,
+      );
 
-      // Appliquer la matrice de transformation au nœud enfant
-      child.p0.copy(childNewP0);
-      child.p1.copy(childNewP1);
+      // Translate child's p0 to its parent's p1
+      const translation_final = new THREE.Matrix4().makeTranslation(
+        node.p1.x - child.p0.x,
+        node.p1.y - child.p0.y,
+        node.p1.z - child.p0.z,
+      );
+
+      // Store transformation matrix
+      child.transform = new THREE.Matrix4()
+        .multiply(translation_final)
+        .multiply(translation_inverse)
+        .multiply(rotationMatrix)
+        .multiply(translation);
+
+      // Apply transformation matrix
+      child.p0.applyMatrix4(child.transform);
+      child.p1.applyMatrix4(child.transform);
       this.applyForces(child, dt, time);
     }
   },

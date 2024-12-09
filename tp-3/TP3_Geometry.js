@@ -12,6 +12,7 @@ class Node {
     this.sections = null; //Liste contenant une liste de points representant les segments circulaires du cylindre generalise
 
     this.originalDirection = null; // Direction initial de la branche
+    this.transform = THREE.Matrix4();
   }
 }
 
