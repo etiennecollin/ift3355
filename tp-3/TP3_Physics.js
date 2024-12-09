@@ -60,7 +60,8 @@ TP3.Physics = {
     const originalLength = node.p1.clone().sub(node.p0).length();
     const originalDirection = node.p1.clone().sub(node.p0).normalize();
 
-    if (node.originalDirection == null) {
+    // Stocker la direction originale
+    if (!node.originalDirection) {
       node.originalDirection = originalDirection;
     }
 
@@ -84,14 +85,19 @@ TP3.Physics = {
 
     // Calculer la nouvelle vélocité après projection
     const trueVelocity = p1NewScaled.clone().sub(node.p1).divideScalar(dt);
+
     node.vel = trueVelocity;
 
     // Calculer l'angle pour la force de restitution
-    const angle = node.originalDirection.angleTo(newDirection);
-    const restitutionVelocity = trueVelocity
+    const angle = originalDirection.angleTo(newDirection);
+    const normal = newDirection.clone().cross(originalDirection).normalize();
+    const restitutionDirection = originalDirection
       .clone()
-      .multiplyScalar(-Math.pow(angle, 2) * node.a0 * 1000);
-    node.vel.sub(trueVelocity);
+      .applyAxisAngle(normal, Math.pow(angle, 2));
+    const restitutionVelocity = restitutionDirection.multiplyScalar(
+      node.a0 * 1000,
+    );
+    node.vel.add(restitutionVelocity);
 
     // Appliquer l'amortissement
     node.vel.multiplyScalar(0.7);
