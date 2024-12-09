@@ -51,7 +51,7 @@ TP3.Physics = {
       ).multiplyScalar(dt),
     );
     // Ajouter la gravite
-    // node.vel.add(new THREE.Vector3(0, -node.mass, 0).multiplyScalar(dt));
+    node.vel.add(new THREE.Vector3(0, -node.mass, 0).multiplyScalar(dt));
 
     // Calcul de la nouvelle position p1
     const p1New = node.p1.clone().add(node.vel.clone().multiplyScalar(dt));
@@ -59,6 +59,11 @@ TP3.Physics = {
     // Conserver la longueur de la branche
     const originalLength = node.p1.clone().sub(node.p0).length();
     const originalDirection = node.p1.clone().sub(node.p0).normalize();
+
+    if (node.originalDirection == null) {
+      node.originalDirection = originalDirection;
+    }
+
     const newDirection = p1New.clone().sub(node.p0).normalize();
 
     // Trouver la matrice de rotation entre les directions
@@ -82,22 +87,14 @@ TP3.Physics = {
     node.vel = trueVelocity;
 
     // Calculer l'angle pour la force de restitution
-    const angle = originalDirection.angleTo(newDirection);
+    const angle = node.originalDirection.angleTo(newDirection);
     const restitutionVelocity = trueVelocity
       .clone()
-      .multiplyScalar(Math.pow(angle, 2) * node.a0 * 1000);
-    node.vel.sub(restitutionVelocity);
+      .multiplyScalar(-Math.pow(angle, 2) * node.a0 * 1000);
+    node.vel.sub(trueVelocity);
 
     // Appliquer l'amortissement
     node.vel.multiplyScalar(0.7);
-
-    // Calculer la matrice de transformation pour les enfants
-    const translation = new THREE.Matrix4().makeTranslation(
-      p1NewScaled.x - node.p1.x,
-      p1NewScaled.y - node.p1.y,
-      p1NewScaled.z - node.p1.z,
-    );
-    const transformMatrix = rotationMatrix.multiply(translation);
 
     // Mettre à jour la position de p1
     node.p1.copy(p1NewScaled);
@@ -113,13 +110,14 @@ TP3.Physics = {
       const childDirection = childVector.normalize();
       const childDirectionTransformed = childDirection
         .clone()
-        .applyMatrix4(transformMatrix)
+        .applyMatrix4(rotationMatrix)
         .multiplyScalar(childLength);
 
-      const childNewP1 = child.p0.clone().add(childDirectionTransformed);
+      const childNewP0 = node.p1.clone();
+      const childNewP1 = childNewP0.clone().add(childDirectionTransformed);
 
       // Appliquer la matrice de transformation au nœud enfant
-      child.p0.copy(node.p1);
+      child.p0.copy(childNewP0);
       child.p1.copy(childNewP1);
       this.applyForces(child, dt, time);
     }
