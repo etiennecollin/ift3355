@@ -51,13 +51,77 @@ TP3.Physics = {
       ).multiplyScalar(dt),
     );
     // Ajouter la gravite
-    node.vel.add(new THREE.Vector3(0, -node.mass, 0).multiplyScalar(dt));
+    // node.vel.add(new THREE.Vector3(0, -node.mass, 0).multiplyScalar(dt));
 
-    // TODO: Projection du mouvement, force de restitution et amortissement de la velocite
+    // Calcul de la nouvelle position p1
+    const p1New = node.p1.clone().add(node.vel.clone().multiplyScalar(dt));
+
+    // Conserver la longueur de la branche
+    const originalLength = node.p1.clone().sub(node.p0).length();
+    const originalDirection = node.p1.clone().sub(node.p0).normalize();
+    const newDirection = p1New.clone().sub(node.p0).normalize();
+
+    // Trouver la matrice de rotation entre les directions
+    const rotationQuat = new THREE.Quaternion().setFromUnitVectors(
+      originalDirection,
+      newDirection,
+    );
+    const rotationMatrix = new THREE.Matrix4().makeRotationFromQuaternion(
+      rotationQuat,
+    );
+
+    // Appliquer la matrice de rotation pour conserver la longueur
+    const p1Direction = originalDirection
+      .clone()
+      .applyMatrix4(rotationMatrix)
+      .multiplyScalar(originalLength);
+    const p1NewScaled = node.p0.clone().add(p1Direction);
+
+    // Calculer la nouvelle vélocité après projection
+    const trueVelocity = p1NewScaled.clone().sub(node.p1).divideScalar(dt);
+    node.vel = trueVelocity;
+
+    // Calculer l'angle pour la force de restitution
+    const angle = originalDirection.angleTo(newDirection);
+    const restitutionVelocity = trueVelocity
+      .clone()
+      .multiplyScalar(Math.pow(angle, 2) * node.a0 * 1000);
+    node.vel.sub(restitutionVelocity);
+
+    // Appliquer l'amortissement
+    node.vel.multiplyScalar(0.7);
+
+    // Calculer la matrice de transformation pour les enfants
+    const translation = new THREE.Matrix4().makeTranslation(
+      p1NewScaled.x - node.p1.x,
+      p1NewScaled.y - node.p1.y,
+      p1NewScaled.z - node.p1.z,
+    );
+    const transformMatrix = rotationMatrix.multiply(translation);
+
+    // Mettre à jour la position de p1
+    node.p1.copy(p1NewScaled);
 
     // Appel recursif sur les enfants
     for (var i = 0; i < node.childNode.length; i++) {
-      this.applyForces(node.childNode[i], dt, time);
+      // Appliquer la matrice de transformation au nœud enfant
+      const child = node.childNode[i];
+
+      // Calculer la nouvelle position de p1 pour l'enfant
+      childVector = child.p1.clone().sub(child.p0);
+      const childLength = childVector.length();
+      const childDirection = childVector.normalize();
+      const childDirectionTransformed = childDirection
+        .clone()
+        .applyMatrix4(transformMatrix)
+        .multiplyScalar(childLength);
+
+      const childNewP1 = child.p0.clone().add(childDirectionTransformed);
+
+      // Appliquer la matrice de transformation au nœud enfant
+      child.p0.copy(node.p1);
+      child.p1.copy(childNewP1);
+      this.applyForces(child, dt, time);
     }
   },
 };
