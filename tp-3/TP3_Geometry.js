@@ -125,7 +125,7 @@ TP3.Geometry = {
         // Check which vector to use for the cross product
         ref = new THREE.Vector3(0, 0, 1);
         if (Math.abs(dp.clone().dot(ref)) > 0.99) {
-          ref = new THREE.Vector3(0, 1, 0);
+          ref = new THREE.Vector3(1, 0, 0);
         }
 
         // Parameterize the branch section
