@@ -67,32 +67,115 @@ TP3.Geometry = {
     lengthDivisions = 4,
     radialDivisions = 8,
   ) {
-    //TODO
+    const branches = [rootNode];
+    // movingFrameMatrix = new THREE.Matrix4();
+
+    while (branches.length > 0) {
+      currentBranch = branches.shift();
+
+      // Add children to the list of branches to process
+      for (child of currentBranch.childNode) {
+        branches.push(child);
+      }
+
+      // Compute the direction of the branch
+      const v0 = currentBranch.parentNode
+        ? new THREE.Vector3().subVectors(
+            currentBranch.parentNode.p1,
+            currentBranch.parentNode.p0,
+          )
+        : new THREE.Vector3(0, 1, 0); // Default root direction
+      const v1 = new THREE.Vector3().subVectors(
+        currentBranch.p1,
+        currentBranch.p0,
+      );
+
+      // TODO: Compute rotation matrix for moving frame and find how to use it
+
+      // // Get angle between v0 and v1
+      // quat = new THREE.Quaternion().setFromUnitVectors(
+      //   v0.clone().normalize(),
+      //   v1.clone().normalize(),
+      // );
+      //
+      // // Create the rotation matrix
+      // rotation = new THREE.Matrix4().makeRotationFromQuaternion(quat);
+      // movingFrameMatrix = movingFrameMatrix.multiply(rotation);
+
+      currentBranch.sections = [];
+      for (let i = 0; i <= lengthDivisions; i++) {
+        t = i / lengthDivisions;
+
+        // Compute the point and its tangent at t
+        const [p, dp] = TP3.Geometry.hermite(
+          currentBranch.p0,
+          currentBranch.p1,
+          v0,
+          v1,
+          t,
+        );
+
+        // Interpolate the radius of the branch
+        const radius = THREE.MathUtils.lerp(
+          currentBranch.a0,
+          currentBranch.a1,
+          t,
+        );
+
+        // Check which vector to use for the cross product
+        ref = new THREE.Vector3(0, 0, 1);
+        if (Math.abs(dp.clone().dot(ref)) > 0.99) {
+          ref = new THREE.Vector3(0, 1, 0);
+        }
+
+        // Parameterize the branch section
+        const u = new THREE.Vector3().crossVectors(dp, ref).normalize();
+        const v = new THREE.Vector3().crossVectors(u, dp).normalize();
+
+        // Generate the section of the branch
+        // Do not generate the last section if the branch has children
+        const section = [];
+        // if (i != lengthDivisions || currentBranch.childNode.length == 0) {
+        if (true) {
+          for (let i = 0; i < radialDivisions; i++) {
+            const angle = (i / radialDivisions) * Math.PI * 2;
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            const offset = u
+              .clone()
+              .multiplyScalar(x)
+              .add(v.clone().multiplyScalar(y));
+            section.push(p.clone().add(offset));
+          }
+        } else {
+          section.push(p.clone());
+        }
+
+        currentBranch.sections.push(section);
+      }
+    }
+
+    return rootNode;
   },
 
   hermite: function (h0, h1, v0, v1, t) {
-    h00 = 2 * t ** 3 - 3 * t ** 2 + 1;
-    h10 = t ** 3 - 2 * t ** 2 + t;
-    h01 = -2 * t ** 3 + 3 * t ** 2;
-    h11 = t ** 3 - t ** 2;
+    // Use De Casteljau's algorithm to calculate the point and its tangent
+    const p0 = h0.clone();
+    const p1 = h0.clone().add(v0.clone().multiplyScalar(1 / 3));
+    const p2 = h1.clone().sub(v1.clone().multiplyScalar(1 / 3));
+    const p3 = h1.clone();
 
-    p = [
-      h00 * h0[0] + h01 * h1[0] + h10 * v0[0] + h11 * v1[0],
-      h00 * h0[1] + h01 * h1[1] + h10 * v0[1] + h11 * v1[1],
-    ];
+    const lerp = (a, b, t) => a.clone().lerp(b, t);
 
-    h00Prime = 6 * t ** 2 - 6 * t;
-    h10Prime = 3 * t ** 2 - 4 * t + 1;
-    h01Prime = -6 * t ** 2 + 6 * t;
-    h11Prime = 3 * t ** 2 - 2 * t;
+    const p01 = lerp(p0, p1, t);
+    const p12 = lerp(p1, p2, t);
+    const p23 = lerp(p2, p3, t);
 
-    dp = [
-      h00Prime * h0[0] + h01Prime * h1[0] + h10Prime * v0[0] + h11Prime * v1[0],
-      h00Prime * h0[1] + h01Prime * h1[1] + h10Prime * v0[1] + h11Prime * v1[1],
-    ];
+    const p012 = lerp(p01, p12, t);
+    const p123 = lerp(p12, p23, t);
 
-    dpLength = Math.sqrt(dp[0] ** 2 + dp[1] ** 2);
-    dp = dp.map((component) => component / dpLength);
+    const p = lerp(p012, p123, t);
+    const dp = p123.clone().sub(p012).normalize();
 
     return [p, dp];
   },
