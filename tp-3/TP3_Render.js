@@ -327,12 +327,13 @@ TP3.Render = {
     }
 
     // Add branches to the scene
-    const branchGeometry = new THREE.BufferGeometry();
+    let branchGeometry = new THREE.BufferGeometry();
     branchGeometry.setAttribute(
       "position",
       new THREE.Float32BufferAttribute(branchVertices, 3),
     );
     branchGeometry.setIndex(branchIndices);
+    branchGeometry = THREE.BufferGeometryUtils.mergeVertices(branchGeometry);
     branchGeometry.computeVertexNormals();
     const branchMaterial = new THREE.MeshLambertMaterial({
       color: 0x8b4513,
