@@ -70,28 +70,25 @@ TP3.Geometry = {
     lengthDivisions = 4,
     radialDivisions = 8,
   ) {
-    const branches = [rootNode];
+    const nodes = [rootNode];
     // movingFrameMatrix = new THREE.Matrix4();
 
-    while (branches.length > 0) {
-      currentBranch = branches.shift();
+    while (nodes.length > 0) {
+      const currentNode = nodes.shift();
 
       // Add children to the list of branches to process
-      for (child of currentBranch.childNode) {
-        branches.push(child);
+      for (child of currentNode.childNode) {
+        nodes.push(child);
       }
 
       // Compute the direction of the branch
-      const v0 = currentBranch.parentNode
+      const v0 = currentNode.parentNode
         ? new THREE.Vector3().subVectors(
-            currentBranch.parentNode.p1,
-            currentBranch.parentNode.p0,
+            currentNode.parentNode.p1,
+            currentNode.parentNode.p0,
           )
         : new THREE.Vector3(0, 1, 0); // Default root direction
-      const v1 = new THREE.Vector3().subVectors(
-        currentBranch.p1,
-        currentBranch.p0,
-      );
+      const v1 = new THREE.Vector3().subVectors(currentNode.p1, currentNode.p0);
 
       // TODO: Compute rotation matrix for moving frame and find how to use it
 
@@ -105,25 +102,21 @@ TP3.Geometry = {
       // rotation = new THREE.Matrix4().makeRotationFromQuaternion(quat);
       // movingFrameMatrix = movingFrameMatrix.multiply(rotation);
 
-      currentBranch.sections = [];
+      currentNode.sections = [];
       for (let i = 0; i <= lengthDivisions; i++) {
         t = i / lengthDivisions;
 
         // Compute the point and its tangent at t
         const [p, dp] = TP3.Geometry.hermite(
-          currentBranch.p0,
-          currentBranch.p1,
+          currentNode.p0,
+          currentNode.p1,
           v0,
           v1,
           t,
         );
 
         // Interpolate the radius of the branch
-        const radius = THREE.MathUtils.lerp(
-          currentBranch.a0,
-          currentBranch.a1,
-          t,
-        );
+        const radius = THREE.MathUtils.lerp(currentNode.a0, currentNode.a1, t);
 
         // Check which vector to use for the cross product
         ref = new THREE.Vector3(0, 0, 1);
@@ -154,7 +147,7 @@ TP3.Geometry = {
           section.push(p.clone());
         }
 
-        currentBranch.sections.push(section);
+        currentNode.sections.push(section);
       }
     }
 
