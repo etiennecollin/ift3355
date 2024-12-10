@@ -12,7 +12,11 @@ class Node {
     this.sections = null; //Liste contenant une liste de points representant les segments circulaires du cylindre generalise
 
     this.originalDirection = null; // Direction initial de la branche
-    this.transform = THREE.Matrix4();
+    this.transform = new THREE.Matrix4();
+
+    this.branchVertexIndices = [];
+    this.leafVertexIndices = [];
+    this.appleVertexIndices = [];
   }
 }
 
@@ -71,6 +75,7 @@ TP3.Geometry = {
     radialDivisions = 8,
   ) {
     const nodes = [rootNode];
+    let vertexIndexCounter = 0;
     // movingFrameMatrix = new THREE.Matrix4();
 
     while (nodes.length > 0) {
@@ -103,6 +108,7 @@ TP3.Geometry = {
       // movingFrameMatrix = movingFrameMatrix.multiply(rotation);
 
       currentNode.sections = [];
+      currentNode.trunkVertexIndices = [];
       for (let i = 0; i <= lengthDivisions; i++) {
         t = i / lengthDivisions;
 
@@ -133,17 +139,20 @@ TP3.Geometry = {
         const section = [];
         // if (i != lengthDivisions || currentBranch.childNode.length == 0) {
         if (true) {
-          for (let i = 0; i < radialDivisions; i++) {
-            const angle = (i / radialDivisions) * Math.PI * 2;
+          for (let j = 0; j < radialDivisions; j++) {
+            const angle = (j / radialDivisions) * Math.PI * 2;
             const x = Math.cos(angle) * radius;
             const y = Math.sin(angle) * radius;
             const offset = u
               .clone()
               .multiplyScalar(x)
               .add(v.clone().multiplyScalar(y));
-            section.push(p.clone().add(offset));
+            const vertex = p.clone().add(offset);
+            currentNode.branchVertexIndices.push(vertexIndexCounter++);
+            section.push(vertex);
           }
         } else {
+          currentNode.branchVertexIndices.push(vertexIndexCounter++);
           section.push(p.clone());
         }
 

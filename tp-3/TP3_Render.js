@@ -177,6 +177,8 @@ TP3.Render = {
     const branchIndices = [];
     const leafBuffers = [];
     const appleBuffers = [];
+    let leafVertexIndexCounter = 0;
+    let appleVertexIndexCounter = 0;
 
     while (branches.length > 0) {
       const currentBranch = branches.shift();
@@ -296,6 +298,11 @@ TP3.Render = {
           leaf.applyMatrix4(leafRotation);
           leaf.applyMatrix4(leafTranslation);
           leaf.applyMatrix4(matrix);
+
+          // Assign leaf vertex indices
+          for (let j = 0; j < 3; j++) {
+            currentBranch.leafVertexIndices.push(leafVertexIndexCounter++);
+          }
           leafBuffers.push(leaf);
         }
       }
@@ -322,6 +329,10 @@ TP3.Render = {
         // Apply transformations to the apple
         apple.applyMatrix4(appleTranslation);
         apple.applyMatrix4(matrix);
+        const numVertices = apple.getAttribute("position").array.length;
+        for (let j = 0; j < numVertices / 3; j++) {
+          currentBranch.appleVertexIndices.push(appleVertexIndexCounter++);
+        }
         appleBuffers.push(apple);
       }
     }
@@ -335,11 +346,13 @@ TP3.Render = {
     branchGeometry.setIndex(branchIndices);
     branchGeometry = THREE.BufferGeometryUtils.mergeVertices(branchGeometry);
     branchGeometry.computeVertexNormals();
-    const branchMaterial = new THREE.MeshLambertMaterial({
-      color: 0x8b4513,
-      side: THREE.DoubleSide,
-    });
-    const branchMesh = new THREE.Mesh(branchGeometry, branchMaterial);
+    const branchMesh = new THREE.Mesh(
+      branchGeometry,
+      new THREE.MeshLambertMaterial({
+        color: 0x8b4513,
+        side: THREE.DoubleSide,
+      }),
+    );
     scene.add(branchMesh);
 
     // Add leaves to the scene
@@ -370,7 +383,58 @@ TP3.Render = {
     applesGeometryBuffer,
     rootNode,
   ) {
-    //TODO
+    const nodesToProcess = [rootNode];
+
+    // Helper function to apply transformations to vertex positions
+    const applyTransformation = (vertices, indices, transformMatrix) => {
+      const position = new THREE.Vector3();
+      for (const index of indices) {
+        // Get vertex position
+        position.fromArray(vertices, index * 3);
+
+        // Transform position
+        position.applyMatrix4(transformMatrix);
+
+        // Update vertex position
+        position.toArray(vertices, index * 3);
+      }
+    };
+
+    while (nodesToProcess.length > 0) {
+      const currentNode = nodesToProcess.shift();
+
+      // Apply transformation to trunk vertices
+      if (currentNode.branchVertexIndices) {
+        applyTransformation(
+          trunkGeometryBuffer,
+          currentNode.branchVertexIndices,
+          currentNode.transform,
+        );
+      }
+
+      // Apply transformation to leaves vertices
+      if (currentNode.leafVertexIndices) {
+        applyTransformation(
+          leavesGeometryBuffer,
+          currentNode.leafVertexIndices,
+          currentNode.transform,
+        );
+      }
+
+      // Apply transformation to apples vertices
+      if (currentNode.appleVertexIndices) {
+        applyTransformation(
+          applesGeometryBuffer,
+          currentNode.appleVertexIndices,
+          currentNode.transform,
+        );
+      }
+
+      // Add children to the queue
+      for (const child of currentNode.childNode) {
+        nodesToProcess.push(child);
+      }
+    }
   },
 
   drawTreeSkeleton: function (
