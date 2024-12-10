@@ -172,24 +172,24 @@ TP3.Render = {
     applesProbability = 0.05,
     matrix = new THREE.Matrix4(),
   ) {
-    const branches = [rootNode];
-    const branchVertices = [];
-    const branchIndices = [];
+    const nodes = [rootNode];
+    const branchBuffers = [];
     const leafBuffers = [];
     const appleBuffers = [];
     let leafVertexIndexCounter = 0;
     let appleVertexIndexCounter = 0;
+    let branchVertexIndexCounter = 0;
 
-    while (branches.length > 0) {
-      const currentBranch = branches.shift();
+    while (nodes.length > 0) {
+      const currentNode = nodes.shift();
 
-      // Add child branches to the queue
-      for (const child of currentBranch.childNode) {
-        branches.push(child);
+      // Add child nodes to the queue
+      for (const child of currentNode.childNode) {
+        nodes.push(child);
       }
 
       // Connect adjacent sections
-      const sections = currentBranch.sections;
+      const sections = currentNode.sections;
       for (let i = 0; i < sections.length - 1; i++) {
         const sectionA = sections[i];
         const sectionB = sections[i + 1];
@@ -198,32 +198,45 @@ TP3.Render = {
         for (let j = 0; j < sectionA.length; j++) {
           const nextJ = (j + 1) % sectionA.length;
 
-          // Triangle 1
-          branchVertices.push(...sectionA[j].toArray());
-          branchVertices.push(...sectionA[nextJ].toArray());
-          branchVertices.push(...sectionB[j].toArray());
-          branchIndices.push(
-            branchVertices.length / 3 - 1,
-            branchVertices.length / 3 - 2,
-            branchVertices.length / 3 - 3,
+          // Create first face
+          const triangle1 = new THREE.BufferGeometry();
+          const vertices1 = new Float32Array([
+            ...sectionA[j].toArray(),
+            ...sectionA[nextJ].toArray(),
+            ...sectionB[j].toArray(),
+          ]);
+          triangle1.setAttribute(
+            "position",
+            new THREE.BufferAttribute(vertices1, 3),
           );
+          triangle1.applyMatrix4(matrix);
+          branchBuffers.push(triangle1);
 
-          // Triangle 2
-          branchVertices.push(...sectionA[nextJ].toArray());
-          branchVertices.push(...sectionB[nextJ].toArray());
-          branchVertices.push(...sectionB[j].toArray());
-          branchIndices.push(
-            branchVertices.length / 3 - 1,
-            branchVertices.length / 3 - 2,
-            branchVertices.length / 3 - 3,
+          // Create second face
+          const triangle2 = new THREE.BufferGeometry();
+          const vertices2 = new Float32Array([
+            ...sectionA[nextJ].toArray(),
+            ...sectionB[nextJ].toArray(),
+            ...sectionB[j].toArray(),
+          ]);
+          triangle2.setAttribute(
+            "position",
+            new THREE.BufferAttribute(vertices2, 3),
           );
+          triangle2.applyMatrix4(matrix);
+          branchBuffers.push(triangle2);
+
+          // Assign vertex indices
+          for (let k = 0; k < 6; k++) {
+            currentNode.branchVertexIndices.push(branchVertexIndexCounter++);
+          }
         }
       }
 
       // Cap the tree branches
-      if (currentBranch.childNode.length == 0 || !currentBranch.parentNode) {
+      if (currentNode.childNode.length == 0 || !currentNode.parentNode) {
         let section = null;
-        if (currentBranch.childNode.length == 0) {
+        if (currentNode.childNode.length == 0) {
           section = sections[sections.length - 1];
         } else {
           section = sections[0];
@@ -233,24 +246,32 @@ TP3.Render = {
         const center = section
           .reduce((sum, point) => sum.add(point), new THREE.Vector3())
           .divideScalar(section.length);
-        const centerIndex = branchVertices.length / 3;
-        branchVertices.push(...center.toArray());
 
         for (let j = 0; j < section.length; j++) {
           const nextJ = (j + 1) % section.length;
 
-          branchVertices.push(...section[j].toArray());
-          branchVertices.push(...section[nextJ].toArray());
-          branchIndices.push(
-            centerIndex,
-            branchVertices.length / 3 - 1,
-            branchVertices.length / 3 - 2,
+          const triangle = new THREE.BufferGeometry();
+          const vertices = new Float32Array([
+            ...center.toArray(),
+            ...section[j].toArray(),
+            ...section[nextJ].toArray(),
+          ]);
+          triangle.setAttribute(
+            "position",
+            new THREE.BufferAttribute(vertices, 3),
           );
+          triangle.applyMatrix4(matrix);
+          branchBuffers.push(triangle);
+
+          // Assign vertex indices
+          for (let k = 0; k < 3; k++) {
+            currentNode.branchVertexIndices.push(branchVertexIndexCounter++);
+          }
         }
       }
 
       // Check if branch needs leaves
-      if (currentBranch.a0 < alpha * leavesCutoff) {
+      if (currentNode.a0 < alpha * leavesCutoff) {
         // Add leavesDensity leaves to the branch
         for (i = 0; i < leavesDensity; i++) {
           // Create an equilateral triangle
@@ -289,9 +310,9 @@ TP3.Render = {
           );
 
           leafTranslation = new THREE.Matrix4().makeTranslation(
-            currentBranch.p1.x + randomOffset.x,
-            currentBranch.p1.y + randomOffset.y,
-            currentBranch.p1.z + randomOffset.z,
+            currentNode.p1.x + randomOffset.x,
+            currentNode.p1.y + randomOffset.y,
+            currentNode.p1.z + randomOffset.z,
           );
 
           // Apply transformations to the leaf
@@ -301,14 +322,15 @@ TP3.Render = {
 
           // Assign leaf vertex indices
           for (let j = 0; j < 3; j++) {
-            currentBranch.leafVertexIndices.push(leafVertexIndexCounter++);
+            currentNode.leafVertexIndices.push(leafVertexIndexCounter++);
           }
           leafBuffers.push(leaf);
         }
       }
+
       // Add apples if branch width meets criteria
       if (
-        currentBranch.a0 < alpha * leavesCutoff &&
+        currentNode.a0 < alpha * leavesCutoff &&
         Math.random() < applesProbability
       ) {
         apple = new THREE.SphereBufferGeometry(alpha / 2);
@@ -321,9 +343,9 @@ TP3.Render = {
         );
 
         appleTranslation = new THREE.Matrix4().makeTranslation(
-          currentBranch.p1.x + randomOffset.x,
-          currentBranch.p1.y + randomOffset.y,
-          currentBranch.p1.z + randomOffset.z,
+          currentNode.p1.x + randomOffset.x,
+          currentNode.p1.y + randomOffset.y,
+          currentNode.p1.z + randomOffset.z,
         );
 
         // Apply transformations to the apple
@@ -331,22 +353,20 @@ TP3.Render = {
         apple.applyMatrix4(matrix);
         const numVertices = apple.getAttribute("position").array.length;
         for (let j = 0; j < numVertices / 3; j++) {
-          currentBranch.appleVertexIndices.push(appleVertexIndexCounter++);
+          currentNode.appleVertexIndices.push(appleVertexIndexCounter++);
         }
         appleBuffers.push(apple);
       }
     }
 
     // Add branches to the scene
-    let branchGeometry = new THREE.BufferGeometry();
-    branchGeometry.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(branchVertices, 3),
+    branchGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries(
+      branchBuffers,
+      true,
     );
-    branchGeometry.setIndex(branchIndices);
     branchGeometry = THREE.BufferGeometryUtils.mergeVertices(branchGeometry);
     branchGeometry.computeVertexNormals();
-    const branchMesh = new THREE.Mesh(
+    branchMesh = new THREE.Mesh(
       branchGeometry,
       new THREE.MeshLambertMaterial({
         color: 0x8b4513,
@@ -354,6 +374,21 @@ TP3.Render = {
       }),
     );
     scene.add(branchMesh);
+
+    // Update the nodes with the merged indices
+    const nodesToProcess = [rootNode];
+    while (nodes.length > 0) {
+      const currentNode = nodesToProcess.shift();
+
+      // Add child nodes to the queue
+      for (const child of currentNode.childNode) {
+        nodesToProcess.push(child);
+      }
+
+      currentNode.branchVertexIndices = currentNode.branchVertexIndices.map(
+        (index) => branchGeometry.index.array[index],
+      );
+    }
 
     // Add leaves to the scene
     leavesGeometry =

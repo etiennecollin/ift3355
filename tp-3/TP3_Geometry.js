@@ -75,7 +75,6 @@ TP3.Geometry = {
     radialDivisions = 8,
   ) {
     const nodes = [rootNode];
-    let vertexIndexCounter = 0;
     // movingFrameMatrix = new THREE.Matrix4();
 
     while (nodes.length > 0) {
@@ -108,7 +107,6 @@ TP3.Geometry = {
       // movingFrameMatrix = movingFrameMatrix.multiply(rotation);
 
       currentNode.sections = [];
-      currentNode.trunkVertexIndices = [];
       for (let i = 0; i <= lengthDivisions; i++) {
         t = i / lengthDivisions;
 
@@ -148,11 +146,9 @@ TP3.Geometry = {
               .multiplyScalar(x)
               .add(v.clone().multiplyScalar(y));
             const vertex = p.clone().add(offset);
-            currentNode.branchVertexIndices.push(vertexIndexCounter++);
             section.push(vertex);
           }
         } else {
-          currentNode.branchVertexIndices.push(vertexIndexCounter++);
           section.push(p.clone());
         }
 
