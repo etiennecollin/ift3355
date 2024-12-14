@@ -97,7 +97,7 @@ TP3.Geometry = {
       // Compute the sections of the branch
       currentNode.sections = [];
       for (let i = 0; i <= lengthDivisions; i++) {
-        t = i / lengthDivisions;
+        const t = i / lengthDivisions;
 
         // Compute the point and its tangent at t
         const [p, dp] = TP3.Geometry.hermite(

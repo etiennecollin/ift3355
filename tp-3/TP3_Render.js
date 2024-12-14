@@ -364,7 +364,7 @@ TP3.Render = {
       branchBuffers,
       true,
     );
-    branchGeometry = THREE.BufferGeometryUtils.mergeVertices(branchGeometry);
+    branchGeometry = THREE.BufferGeometryUtils.mergeVertices(branchGeometry); // This is inefficient, but we don't really care... the usecase is a single tree here!
     branchGeometry.computeVertexNormals();
     branchMesh = new THREE.Mesh(
       branchGeometry,
