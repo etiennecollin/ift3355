@@ -75,8 +75,8 @@ TP3.Geometry = {
     radialDivisions = 8,
   ) {
     const nodes = [rootNode];
-    // movingFrameMatrix = new THREE.Matrix4();
 
+    // Iterate over the tree
     while (nodes.length > 0) {
       const currentNode = nodes.shift();
 
@@ -94,18 +94,7 @@ TP3.Geometry = {
         : new THREE.Vector3(0, 1, 0); // Default root direction
       const v1 = new THREE.Vector3().subVectors(currentNode.p1, currentNode.p0);
 
-      // TODO: Compute rotation matrix for moving frame and find how to use it
-
-      // // Get angle between v0 and v1
-      // quat = new THREE.Quaternion().setFromUnitVectors(
-      //   v0.clone().normalize(),
-      //   v1.clone().normalize(),
-      // );
-      //
-      // // Create the rotation matrix
-      // rotation = new THREE.Matrix4().makeRotationFromQuaternion(quat);
-      // movingFrameMatrix = movingFrameMatrix.multiply(rotation);
-
+      // Compute the sections of the branch
       currentNode.sections = [];
       for (let i = 0; i <= lengthDivisions; i++) {
         t = i / lengthDivisions;
@@ -123,7 +112,7 @@ TP3.Geometry = {
         const radius = THREE.MathUtils.lerp(currentNode.a0, currentNode.a1, t);
 
         // Check which vector to use for the cross product
-        ref = new THREE.Vector3(0, 0, 1);
+        let ref = new THREE.Vector3(0, 0, 1);
         if (Math.abs(dp.clone().dot(ref)) > 0.99) {
           ref = new THREE.Vector3(1, 0, 0);
         }
@@ -133,23 +122,20 @@ TP3.Geometry = {
         const v = new THREE.Vector3().crossVectors(u, dp).normalize();
 
         // Generate the section of the branch
-        // Do not generate the last section if the branch has children
         const section = [];
-        // if (i != lengthDivisions || currentBranch.childNode.length == 0) {
-        if (true) {
-          for (let j = 0; j < radialDivisions; j++) {
-            const angle = (j / radialDivisions) * Math.PI * 2;
-            const x = Math.cos(angle) * radius;
-            const y = Math.sin(angle) * radius;
-            const offset = u
-              .clone()
-              .multiplyScalar(x)
-              .add(v.clone().multiplyScalar(y));
-            const vertex = p.clone().add(offset);
-            section.push(vertex);
-          }
-        } else {
-          section.push(p.clone());
+        for (let j = 0; j < radialDivisions; j++) {
+          // Get the offset of the vertex from the point
+          const angle = (j / radialDivisions) * Math.PI * 2;
+          const x = Math.cos(angle) * radius;
+          const y = Math.sin(angle) * radius;
+          const offset = u
+            .clone()
+            .multiplyScalar(x)
+            .add(v.clone().multiplyScalar(y));
+
+          // Add the vertex to the section
+          const vertex = p.clone().add(offset);
+          section.push(vertex);
         }
 
         currentNode.sections.push(section);
