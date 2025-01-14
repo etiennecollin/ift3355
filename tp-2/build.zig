@@ -35,7 +35,7 @@ pub fn build(b: *std.Build) void {
             .flags = &.{
                 // "-Wall",
                 // "-std=c++17",
-                // "-Og",
+                // "-O1",
                 // "-g",
             },
         },
