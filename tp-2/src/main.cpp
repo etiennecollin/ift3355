@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
 
     fs::path data_root("data");
 
-    // Non de fichier de scène spécifié
+    // File name of the specified scene
     fs::path filename_scene_input = data_root / "scene" / std::string(argv[1]);
     fs::path directory_scene_output = data_root / "output" / filename_scene_input.stem();
 
@@ -39,25 +39,25 @@ int main(int argc, char **argv) {
     std::cout << "Rendering " << filename_scene_input << std::endl;
     std::cout << "Output to " << directory_scene_output << std::endl;
 
-    // Analyse le fichier de la scène
+    // Scene file analysis
     Parser parser(new std::ifstream(filename_scene_input.string().c_str()));
     if (!parser.parse()) {
         std::cout << "Scene is not found or can't be parsed." << std::endl;
     } else {
         Frame output = Frame{parser.scene.resolution[0], parser.scene.resolution[1]};
 
-        // Rend la scène donnée avec le lancer de rayon
+        // Render the given scene with raytracing
         Raytracer raytracer;
         raytracer.render(parser.scene, &output);
 
-        // Sauvegarde la frame
+        // Save the frame
         output.show_color_to((directory_scene_output / "color.bmp").string().c_str());
         output.show_depth_to((directory_scene_output / "depth.bmp").string().c_str());
 
         std::cout << "Ray tracing finished with images saved." << std::endl;
     }
 
-    // Décommentez si vous utilisez Visual Studio
+    // Uncomment if you use Visual Studio
     // system("pause");
     return 0;
 };

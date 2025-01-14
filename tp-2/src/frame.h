@@ -10,12 +10,9 @@
 
 #include "basic.h"
 
-// Class to represent images, capable of reading/writing in PPM format.
+// Class to represent images, capable of reading/writing in PPM format
 // All external coordinates will be expressed with the origin at the bottom
-// left, even though most image encodings start at the top left.
-
-// Classe qui représente une seule frame.
-// Les coordonnées sont exprimés dans un repere où l'origine est le coin inférieure gauche de l'image.
+// left, even though most image encodings start at the top left
 class Frame {
    protected:
     int width, height;
@@ -23,28 +20,28 @@ class Frame {
     double *depth;
 
    public:
-    // Construit une frame
+    // Build a frame
     Frame() : width(0), height(0), color(NULL) {}
 
-    // Construit une frame avec les dimensions spécifiées.
+    // Build a frame with the specified dimensions
     Frame(int width, int height) : width(width), height(height) {
         color = new double[3 * width * height];
         depth = new double[3 * width * height];
     }
 
-    // Destructor.
+    // Destructor
     ~Frame() {
         delete[] color;
         delete[] depth;
     }
 
-    // Sauvegarde la couleur à l'endroit spécifiée.
+    // Save the color at the specified location.
     void show_color_to(std::string const &filename) const { show_to(filename, color); }
 
-    // Sauvegarde la profondeur à l'endroit spécifiée.
+    // Save the depth at the specified location.
     void show_depth_to(std::string const &filename) const { show_to(filename, depth); }
 
-    // Modifie la couleur du pixel à la coordoonnée x,y
+    // Modify the color of the pixel at the coordinate x,y
     void set_color_pixel(int x, int y, double3 color) {
         int offset = compute_offset(x, y);
 
@@ -53,7 +50,7 @@ class Frame {
         }
     }
 
-    // Modifie la profondeur du pixel à la coordoonnée x,y
+    // Modify the depth of the pixel at the coordinate x,y
     void set_depth_pixel(int x, int y, double gray) {
         int offset = compute_offset(x, y);
 
@@ -63,7 +60,7 @@ class Frame {
     }
 
    private:
-    // Calcule le décalage dans le tableau plat.
+    // Compute the offset in the flat table
     int compute_offset(int x, int y) {
         y = height - y - 1;
         return 3 * (y * width + x);

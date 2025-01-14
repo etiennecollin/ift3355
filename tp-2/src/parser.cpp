@@ -52,7 +52,7 @@ std::ostream& operator<<(std::ostream& out, Token const& token) {
 }
 
 Token Lexer::_process_stream(void) {
-    // Handle immediate/error conditions.
+    // Handle immediate/error conditions
     if (_input->eof()) {
         return Token(END_OF_FILE);
     }
@@ -60,22 +60,22 @@ Token Lexer::_process_stream(void) {
         return Token(ERROR);
     }
 
-    // The next character in the stream.
+    // The next character in the stream
     char c = _input->peek();
 
-    // Strip whitespace and comments.
+    // Strip whitespace and comments
     bool did_strip_something;
     do {
         did_strip_something = false;
 
-        // Strip whitespace.
+        // Strip whitespace
         while (isspace(c)) {
             _input->ignore(1);
             c = _input->peek();
             did_strip_something = true;
         }
 
-        // Strip comments.
+        // Strip comments
         if (c == '#') {
             do {
                 c = _input->get();
@@ -86,7 +86,7 @@ Token Lexer::_process_stream(void) {
 
     } while (did_strip_something);
 
-    // Arrays.
+    // Arrays
     switch (c) {
         case '[':
             _input->ignore(1);
@@ -96,7 +96,7 @@ Token Lexer::_process_stream(void) {
             return Token(ARRAY_END);
     }
 
-    // Strings.
+    // Strings
     if (c == '"') {
         _input->get();
         std::string value;
@@ -107,7 +107,7 @@ Token Lexer::_process_stream(void) {
                 case '"':
                     finished = true;
                     break;
-                    // TODO: handle escapes.
+                    // TODO: handle escapes
                 default:
                     value += c;
             }
@@ -116,7 +116,7 @@ Token Lexer::_process_stream(void) {
     }
 
     // Numbers; try to read one and if it doesn't work reset the error
-    // state and carry on.
+    // state and carry on
     double number;
     *_input >> number;
     if (!_input->fail()) {
@@ -124,14 +124,14 @@ Token Lexer::_process_stream(void) {
     }
     _input->clear();
 
-    // Names.
+    // Names
     std::string name;
     (*_input) >> name;
     if (name.size()) {
         return Token(NAME, name);
     }
 
-    // There is nothing left to read.
+    // There is nothing left to read
     return Token(END_OF_FILE);
 }
 
@@ -174,7 +174,7 @@ std::vector<double> Lexer::get_numbers(unsigned int min, unsigned int max) {
         skip(1);
     }
 
-    // UGLY HACK: Only here so we have something to `continue` to.
+    // UGLY HACK: Only here so we have something to `continue` to
     do {
         Token token = next();
 
@@ -317,14 +317,14 @@ bool Parser::parse() {
             return false;
         }
 
-        // Should have `continue`d by this point.
+        // Should have `continue`d by this point
         std::cerr << "parsing failed due to unknown command \"" << name << "\"" << std::endl;
         return false;
     }
 }
 
 void Parser::parse_dimension() {
-    // dimensions
+    // Dimensions
     scene.resolution[0] = static_cast<int>(lexer.get_number());
     scene.resolution[1] = static_cast<int>(lexer.get_number());
 }
@@ -383,7 +383,7 @@ void Parser::parse_PushMatrix() { transform_stack.push_back(transform_stack.back
 
 void Parser::parse_Translate() {
     // Need to store these in variables because if we pass them directly to
-    // Matrix::whatever(...) we are no guarunteed they are called in order.
+    // Matrix::whatever(...) we are no guarunteed they are called in order
     double x = lexer.get_number();
     double y = lexer.get_number();
     double z = lexer.get_number();
@@ -392,7 +392,7 @@ void Parser::parse_Translate() {
 
 void Parser::parse_Scale() {
     // Need to store these in variables because if we pass them directly to
-    // Matrix::whatever(...) we are no guarunteed they are called in order.
+    // Matrix::whatever(...) we are no guarunteed they are called in order
     double x = lexer.get_number();
     double y = lexer.get_number();
     double z = lexer.get_number();
@@ -401,7 +401,7 @@ void Parser::parse_Scale() {
 
 void Parser::parse_Rotate() {
     // Need to store these in variables because if we pass them directly to
-    // Matrix::whatever(...) we are no guarunteed they are called in order.
+    // Matrix::whatever(...) we are no guarunteed they are called in order
     double a = lexer.get_number();
     double x = lexer.get_number();
     double y = lexer.get_number();
@@ -436,7 +436,7 @@ void Parser::parse_Cylinder() {
 void Parser::parse_Mesh() {
     std::cout << "Mesh: ";
 
-    // First try to get a filename, and read an OBJ from it.
+    // First try to get a filename, and read an OBJ from it
     std::string filename;
     try {
         filename = lexer.get_string();
@@ -452,15 +452,15 @@ void Parser::parse_Mesh() {
 
         finish_object(obj);
     } catch (std::string e) {
-        // OK.
+        // OK
         std::cout << "Could not be parse :: " << e << std::endl;
     }
 
-    // Normally this comes last, but we want the color on the front.
+    // Normally this comes last, but we want the color on the front
 }
 
 void Parser::finish_object(Object* obj) {
-    // Get the material name, and make sure that material exists.
+    // Get the material name, and make sure that material exists
     std::string material_name = lexer.get_string();
     if (!ResourceManager::Instance()->materials.count(material_name)) {
         std::stringstream ss;
@@ -469,10 +469,10 @@ void Parser::finish_object(Object* obj) {
     }
     obj->key_material = material_name;
 
-    // Set transform, inv transform, and normal transform.
+    // Set transform, inv transform, and normal transform
     obj->setup_transform(transform_stack.back());
 
-    // Add to the list of objects.
+    // Add to the list of objects
     objects.push_back(obj);
 }
 

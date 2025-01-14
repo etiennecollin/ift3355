@@ -19,104 +19,101 @@
 #include "scene.h"
 using namespace linalg::aliases;
 
-// Les différents types de token pouvant être lexés
+// Different types of tokes that can be lexed
 enum TokenType { STRING, NUMBER, NAME, ARRAY_BEGIN, ARRAY_END, END_OF_FILE, ERROR };
 
-// Une classe pour représenter un token qui a été lu
+// A class to represent a token that has been read
 class Token {
    public:
     TokenType type;
 
-    // Variables pour les différents types de données.
+    // Variables for different data types
     double number;
     std::string string;
 
-    // Quelques constructeurs pour assigner directement des valeurs.
+    // Constructors to assign values directly
     Token(TokenType type) : type(type) {}
     Token(double value) : type(NUMBER), number(value) {}
     Token(TokenType type, std::string value) : type(type), string(value) {}
 
-    // Opérateur d'égalité.
+    // Implement the equality operator
     bool operator==(Token const &other) const;
 };
 
-// Permet l'écriture d'un token directement dans le flux de sortie.
+// Allow writing a token directly to the output stream
 std::ostream &operator<<(std::ostream &out, Token const &token);
 
-// La classe du lexer.
+// Lexer class
 class Lexer {
    public:
-    // Constructeur. Un flux d'entrée doit être fourni.
+    // Constructor. An input stream must be provided
     Lexer(std::istream *input) : _input(input) {}
 
-    // Regarde le prochain token mais ne le consomme pas.
+    // Look at the next token but don't consume it
     Token peek(unsigned int index = 0);
 
-    // Accède au token suivant.
+    // Access the next token
     Token next();
 
-    // Passe un certain nombre de tokens.
+    // Skip a certain number of tokens
     void skip(unsigned int count = 1);
 
-    // Les fonctions suivantes produiront une exception std::string si
-    // elles ne peuvent pas fonctionner comme demandé.
+    // The following functions will throw an std::string exception if they cannot operate as requested.
 
-    // Récupère un nom de commande.
+    // Get the name of a command
     std::string get_name();
 
-    // Récupère une liste de nombres. Min/max font référence
-    // à la taille requise de la liste.
+    // Obtain a list of numbers. Min/max refer to the required size of the list
     std::vector<double> get_numbers(unsigned int min = 0, unsigned int max = UINT_MAX);
 
-    // Récupère un unique nombre.
+    // Get a single number
     double get_number();
 
-    // Récupère une unique string.
+    // Get a single string
     std::string get_string();
 
-    // Récupère une liste de paramètres (i.e. strings mappés à des listes de nombres).
-    // Min/max s'appliquent à chaque liste, tout comme get_numbers().
+    // Get a list of parameters (i.e. strings mapped to lists of numbers).
+    // Min/max apply to each list, just like get_numbers().
     ParamList get_param_list(unsigned int min = 0, unsigned int max = UINT_MAX);
     bitmap_image get_bitmap();
 
    private:
-    // Le flux d'entrée.
+    // Input stream
     std::istream *_input;
 
-    // Fonction pour lire le flux d'entrée et retourner le token suivant.
+    // Read the input stream and return the next token
     Token _process_stream();
 
-    // Un buffer temporaire pour les tokens qui n'ont pas encore été analysés.
+    // Temporary buffer for tokens that have not yet been analyzed
     std::deque<Token> _buffer;
 };
 
 class Parser {
    private:
-    Lexer lexer;  // Le lexer utilisé pour séparer le fichier en tokens.
+    Lexer lexer;  // The lexer that will be used to analyze the input
 
-    std::vector<double4x4> transform_stack;  // Pile de transformations.
+    std::vector<double4x4> transform_stack;  // Transformations stack
 
     std::vector<Object *> objects;
 
-    // Les fonctions suivantes analysent toutes les commandes qui peuvent être
-    // trouvées dans un fichier .ray.
+    // The following functions all parse commands that can be found in a .ray file
 
-    // Meta argument pour la scene
+    // Meta arguments for the scene
     void parse_dimension();
     void parse_samples_per_pixel();
     void parse_jitter_radius();
     void parse_ambient_light();
     void parse_max_ray_depth();
 
-    // Argument pour la caméra
+    // Arguments for the camera
     void parse_Perspective();
     void parse_LookAt();
     void parse_DOF();
 
-    // Argument pour les matériaux
+    // Argument for materials
     void parse_Material();
 
-    // Argument pour la création d'objet avec leur matrice de transformation.
+    // Arguments for object creation with their transformation matrix.
     void parse_PushMatrix();
     void parse_PopMatrix();
     void parse_Translate();
@@ -128,14 +125,14 @@ class Parser {
     void parse_Cylinder();
     void parse_Mesh();
 
-    // Argument pour la création de lumière
+    // Arguments for light creation
     void parse_SphericalLight();
 
-    // Analyse les parties communes de chaque objet et met en place les objets dans la scène.
+    // Analyze the common parts of each object and set up the objects in the scene.
     void finish_object(Object *obj);
 
    public:
-    Scene scene;  // La scène qui sera créée pendant l'analyse.
+    Scene scene;  // The scene that will be created
 
     Parser(char const *filename) : lexer(new std::ifstream(filename)) {}
     Parser(std::istream *input) : lexer(input) {}
@@ -150,8 +147,8 @@ class Parser {
         }
     }
 
-    // Analyse le fichier ou le flux passé au constructeur.
-    // Sauvegarde le résultat dans une scène.
-    // Retourne false sur un échec ; erreur écrite dans std::cerr.
+    // Analyze the file or stream passed to the constructor.
+    // Save the result in a scene.
+    // Returns false on failure; error written to std::cerr.
     bool parse();
 };

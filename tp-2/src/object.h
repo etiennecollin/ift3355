@@ -15,13 +15,13 @@
 using namespace linalg::aliases;
 #include "aabb.h"
 
-// Le type d'une "liste de paramètres", e.g. une map de strings vers des listes de nombres.
+// The type of a "list of parameters", e.g. a map from strings to lists of numbers
 typedef std::map<std::string, std::vector<double> > ParamList;
 
-// Une classe pour encapsuler tous les paramètres d'un matériau.
+// A class to encapsulate all the parameters of a material
 class Material {
    public:
-    // Constructeurs
+    // Constructors
     Material() {};
     Material(bitmap_image& b, ParamList& params) { init(b, params); }
 
@@ -46,66 +46,68 @@ class Material {
         SET_FLOAT(k_reflection)
         SET_FLOAT(k_refraction)
     }
-    // Texture du matériel NON-normalisé [r,g,b \in 0..=255]
+    // Texture of a material NON-normalized [r,g,b \in 0..=255]
     bitmap_image texture_albedo;
 
-    // Couleur du matériel normalisé [r,g,b \in 0..=1] si aucune texture n'est présent
+    // Color of a material normalized [r,g,b \in 0..=1] if no texture is present
     double3 color_albedo;
 
-    // Coefficient qui module les paramètres de la lumière ambiente, difuse et spéculaire
+    // Coefficients that modulate the parameters of ambient, diffuse, and specular light
     double k_ambient;
     double k_diffuse;
     double k_specular;
 
-    // Coefficient métallique pour la réflexion spéculaire [0 -> Surface métallique, 1 -> Surface plastique]
+    // Metallic coefficient for specular reflection [0 -> Metallic surface, 1 -> Plastic surface
     double metallic;
 
-    // Coefficent de "brillance" (Exposant Spéculaire).
+    // Shininess coefficient (Specular Exponent).
     double shininess;
 
-    // Indice de réfraction du matériel [1 correspond à l'air ambiant]
+    // Refractive index of the material [1 corresponds to the ambient air]
     double refractive_index;
 
-    // Coefficient de réflexion de la couleur capturée lors du lancer de rayon.
+    // Reflection coefficient of the color captured during ray casting
     double k_reflection;
 
-    // Coefficient de réfraction de la couleur capturée lors du lancer de rayon.
+    // Refraction coefficient of the color captured during ray casting
     double k_refraction;
 };
 
-// Une classe pour encapsuler l'information suite à l'intersection.
+// A class that encapsulates the information following an intersection
 class Intersection {
    public:
-    // La profondeur du rayon
+    // Ray depth
     double depth;
 
-    // La position de l'intersection
+    // Intersection position
     double3 position;
 
-    // La normale à la surface d'intersection
+    // Normal at the intersection surface
     double3 normal;
 
-    // Les coordonnées UV associées à l'intersection [entre 0 et 1]
+    // UV coordinates associated with the intersection [between 0 and 1]
     double2 uv;
 
-    // La clé associée au matériel utilisé.
+    // Key of the material used
     std::string key_material;
+
+    // Store object id
+    double obj_id;
 
     Intersection() : depth(DBL_MAX) {}
 };
 
-// Classe abstraite de base pour les objets.
+// Abstract base class for objects
 class Object {
    public:
-    double4x4 transform;    // Transformation de l'espace de l'objet à l'espace global (local --> global).
-    double4x4 i_transform;  // Transformation de l'espace de global à l'espace de l'objet (global --> local).
+    double4x4 transform;    // Transformation from local to global space (local --> global
+    double4x4 i_transform;  // Transformation from global to local space (global --> local)
 
-    double3x3
-        n_transform;  // Transformation de l'espace de l'objet à l'espace global pour les normales (local --> global).
+    double3x3 n_transform;  // Transformation from local to global space for normals (local --> global) [3x3 matrix
 
-    std::string key_material;  // Matériau de l'objet.
+    std::string key_material;  // Object material
 
-    // Mets en place les 3 transformations à partir de la transformation (global-vers-objet) donnée.
+    // Setup the 3 transformations from the given (global-to-object) transformation
     void setup_transform(double4x4 m) {
         transform = m;
         i_transform = inverse(m);
@@ -114,23 +116,16 @@ class Object {
                        {i_transform[0][2], i_transform[1][2], i_transform[2][2]}};
     };
 
-    // Intersecte l'objet avec le rayon donné dans le repère global.
-    // Retourne true s'il y a eu une intersection avec de l'information sur l'intersection.
+    // Intersect the object with the given ray in global space.
+    // Return true if there was an intersection with information about the intersection.
     bool intersect(Ray ray, double t_min, double t_max, Intersection* hit) {
-        // Rayon dans le repère locale
+        // Local space ray
         Ray lray{mul(i_transform, {ray.origin, 1}).xyz(), mul(i_transform, {ray.direction, 0}).xyz()};
 
-        //!!! NOTE UTILE : Pour calculer la profondeur dans local_intersect(), si l'intersection se passe à
-        //                 ray.origin + ray.direction * t, alors t est la PROFONDEUR
-
-        //!!! NOTE UTILE : Assurez-vous que la profondeur du rayon soit contenu entre t_min et t_max.
         if (local_intersect(lray, t_min, t_max, hit)) {
-            //!!! NOTE UTILE : Assurez-vous que la normale est bien normalisée
-            //                 et que les coordonnées UV sont contenus [0..1]
-
             hit->key_material = key_material;
 
-            // Transforme les coordonnées de l'intersection dans le repère GLOBAL.
+            // Transform the intersection coordinates to global space.
             hit->position = mul(transform, {hit->position, 1}).xyz();
             hit->normal = normalize(mul(n_transform, hit->normal));
 
@@ -140,11 +135,9 @@ class Object {
         return false;
     };
 
-    // Construit la boite englobante pour l'objet donnée.
-    //
-    // !!!NOTE UTILE : Ceci doit être appelé après que les objets soient formées et avant
-    //                 que le lancer de rayons ne commence.
-    // !!!NOTE UTILE : Celui-ci doit se faire dans le repère GLOBAL!
+    // Construct the bounding box for the given object.
+    // This must be called after the objects are formed and before the ray casting begins.
+    // This must be done in GLOBAL space.
     virtual AABB compute_aabb() {
         AABB aabb;
         aabb.min = double3{-DBL_MAX, -DBL_MAX, -DBL_MAX};
@@ -154,70 +147,69 @@ class Object {
     };
 
    protected:
-    // Intersecte l'objet avec le rayon donné dans le repère local.
-    // Cette fonction est spécifique à chaque sous-type d'objet.
-    // Retourne true s'il y a eu une intersection, hit est alors mis à jour avec les paramètres.
+    // Intersect the oblect with the given ray in local space.
+    // This function is specific to each object subtype.
+    // Returns true if there was an intersection, hit is then updated with the parameters.
     virtual bool local_intersect(Ray ray, double t_min, double t_max, Intersection* hit) = 0;
 };
 
-// Espace Local: Sphère centrée à l'origine avec un rayon (radius).
+// Local space: Sphere centered at the origin with a radius (radius)
 class Sphere : public Object {
    public:
-    // Rayon de la sphère
+    // Radius of the sphere
     double radius;
 
     Sphere(double r) : radius(r) {};
 
-    // À adapter pour la sphère.
+    // Compute the sphere's AABB
     virtual AABB compute_aabb();
 
    protected:
-    // À adapter pour la sphère
+    // Intersect the sphere with the given ray in local space.
     virtual bool local_intersect(Ray ray, double t_min, double t_max, Intersection* hit);
 };
 
-// Espace Local: Quad(Rectangle) centrée à l'origine tel que la normale
-//               est Z+ pour une largeur de (2 * half_size) x (2 * half_size)
+// Local space: Quad(Rectangle) centered at the origin such that the normal is Z+ for a width of (2 * half_size) x (2 *
+// half_size)
 class Quad : public Object {
    public:
-    // Demi-Largeur
+    // Half width
     double half_size;
 
     Quad(double s) : half_size(s) {};
 
-    // À adapter pour le plan
+    // Compute the quad's AABB
     virtual AABB compute_aabb();
 
    protected:
-    // À adapter pour le plan
+    // Intersect the quad with the given ray in local space.
     virtual bool local_intersect(Ray const ray, double t_min, double t_max, Intersection* hit);
 };
 
-// Espace Local: Cylindre tel que l'axe principale est aligné à l'axe Y
-//               pour une hauteur (2 * half_height) avec un rayon (radius).
+// Local space: Cylinder such that the main axis is aligned with the Y-axis for a height (2 * half_height) with a radius
+// (radius)
 class Cylinder : public Object {
    public:
-    // Rayon du cylindre
+    // Radius of the cylinder
     double radius;
-    // Demi-hauteur du cylindre par rapport à l'origine.
+    // Half height of the cylinder relative to the origin.
     double half_height;
 
     Cylinder(double radius, double height) : radius(radius), half_height(height) {};
 
-    // À adapter pour le cylindre
+    // Compute the cylinder's AABB
     virtual AABB compute_aabb();
 
    protected:
-    // À adapter pour le cylindre
+    // Intersect the cylinder with the given ray in local space.
     virtual bool local_intersect(Ray ray, double t_min, double t_max, Intersection* hit);
 };
 
-// Une classe pour représenter le sommet d'un polygone.
-// Les entiers stockés sont des indices pour les vecteurs
-// positions/tex_coords/normals de l'objet auquel le sommet appartient.
+// A class representing a vertex of a polygon.
+// The stored integers are indices into the positions/tex_coords/normals vectors of the object the vertex belongs to.
 class Vertex {
    public:
-    // Indices dans les vecteurs positions, tex_coords et normals.
+    // Indices into the positions, tex_coords, and normals vectors
     int pi, ti, ni;
 
     Vertex() : pi(-1), ti(-1), ni(-1) {}
@@ -225,7 +217,7 @@ class Vertex {
     Vertex(int pi, int ti, int ni) : pi(pi), ti(ti), ni(ni) {}
 };
 
-// Un triangle avec 3 sommets contenant les indices associés à l'objet.
+// A triangle with 3 vertices containing the indices associated with the object
 class Triangle {
    public:
     Vertex v[3];
@@ -240,22 +232,21 @@ class Triangle {
     const Vertex& operator[](int i) const { return v[i]; }
 };
 
-// Espace Local: Mesh centrée à l'origine avec les positions spécifiées, normales et les coordonnées de textures
-//               associés à chaque triangle.
+// Local space: Mesh centered at the origin with the specified positions, normals, and texture coordinates associated
+// with each triangle
 class Mesh : public Object {
    public:
-    // Contenant pour les positions, coordonnées de texture, normales et couleurs. Recherche par indice.
+    // Containers for positions, texture coordinates, normals, and colors. Look up by index
     std::vector<double3> positions;
     std::vector<double3> normals;
     std::vector<double2> tex_coords;
 
-    // Les triangles sont des triplets de sommets.
+    // Triangles are triplets of vertices
     std::vector<Triangle> triangles;
 
-    // Lis les données OBJ d'un fichier donné.
+    // List the OBJ data from a given file.
     Mesh(std::ifstream& file) {
-        // Continue de récupérer les codes opérationnel et de les analyser. Nous supposons
-        // qu'il n'y a qu'une opération par ligne.
+        // Continues to retrieve the op code and parse it. We assume there is only one op per line
         while (file.good()) {
             std::string opString;
             std::getline(file, opString);
@@ -264,17 +255,17 @@ class Mesh : public Object {
             std::string opCode;
             opStream >> opCode;
 
-            // Saute les lignes blanches et les commentaires.
+            // Skip blank lines and comments
             if (!opCode.size() || opCode[0] == '#') {
                 continue;
             }
 
-            // Ignore les groupes.
+            // Ignore groups
             if (opCode[0] == 'g' || opCode[0] == 'o' || opCode[0] == 's') {
                 std::cerr << "ignored OBJ opCode '" << opCode << "'" << std::endl;
-            }  // Données de sommet.
+            }  // Vertex data
             else if (opCode[0] == 'v') {
-                // Lis jusqu'à 4 doubles.
+                // Read 4 doubles at most
                 std::vector<double> vec;
                 for (int i = 0; opStream.good() && i < 3; i++) {
                     double v;
@@ -282,7 +273,7 @@ class Mesh : public Object {
                     vec.push_back(v);
                 }
 
-                // Stocke cette donnée dans le bon vecteur.
+                // Store this data in the right vector
                 switch (opCode.size() > 1 ? opCode[1] : 'v') {
                     case 'v':
                         positions.push_back({vec[0], vec[1], vec[2]});
@@ -297,12 +288,12 @@ class Mesh : public Object {
                         std::cerr << "unknown vertex type '" << opCode << "'" << std::endl;
                         break;
                 }
-            }  // Un polygone (ou face).
+            }  // A polygon or a face
             else if (opCode == "f") {
                 std::vector<Vertex> polygon;
-                // Limite à 4 sommets, puisque nous ne gérons que les triangles ou les quads.
+                // limit the number of vertices to 4, since we only handle triangles or quads
                 for (int i = 0; opStream.good() && i < 4; i++) {
-                    // Récupère la spécification complète d'un sommet.
+                    // Get the full specification of a vertex
                     std::string vertexString;
                     opStream >> vertexString;
 
@@ -310,12 +301,12 @@ class Mesh : public Object {
                         break;
                     }
 
-                    // Analyse le sommet en un set d'indices pour les positions, coordonnées de tetxure,
-                    // normales et couleurs, respectivement.
+                    // Analyse the vertex into a set of indices for positions, texture coordinates, normals and colors,
+                    // respectively
                     std::stringstream vertexStream(vertexString);
                     std::vector<int> indices;
                     for (int j = 0; vertexStream.good() && j < 3; j++) {
-                        // Saute les slashes.
+                        // Skip slashes
                         if (vertexStream.peek() == '/') {
                             vertexStream.ignore(1);
                         }
@@ -323,39 +314,38 @@ class Mesh : public Object {
                         if (vertexStream >> index) indices.push_back(index);
                     }
 
-                    // Transforme les données récupérées en un véritable sommet, et l'ajoute au polygone.
+                    // Transform the retrieved data into a real vertex, and add it to the polygon
                     if (indices.size()) {
                         indices.resize(3, 0);
                         polygon.push_back(Vertex(indices[0] - 1, indices[1] - 1, indices[2] - 1));
                     }
                 }
 
-                // On n'accepte que les triangles...
+                // We only accept triangles...
                 if (polygon.size() == 3) {
                     triangles.push_back(Triangle(polygon[0], polygon[1], polygon[2]));
-                }  // ... et les quads...
+                }  // ... and quads ...
                 else if (polygon.size() == 4) {
-                    // ... mais on les décompose en triangle.
+                    // ... but we split quads into two triangles
                     triangles.push_back(Triangle(polygon[0], polygon[1], polygon[2]));
                     triangles.push_back(Triangle(polygon[0], polygon[2], polygon[3]));
                 }
 
-                // Tous les autres codes op sont ignorés.
+                // All other op codes are ignored
             } else {
                 std::cerr << "unknown opCode '" << opCode << "'" << std::endl;
             }
         }
     }
 
-    // À adapter pour le mesh
+    // Compute the mesh's AABB
     virtual AABB compute_aabb();
 
    protected:
-    // À adapter pour le mesh
+    // Intersect the mesh with the given ray in local space
     virtual bool local_intersect(Ray const ray, double t_min, double t_max, Intersection* hit);
 
-    // Trouve le point d'intersection entre le rayon donné et le maillage triangulaire.
-    // Renvoie true ssi une intersection existe, et remplit les données de
-    // la structure hit avec les bonnes informations.
+    // Find the intersection point between the given ray and the triangular mesh.
+    // Returns true if an intersection exists, and fills the data of the hit structure with the right information.
     bool intersect_triangle(Ray const ray, double t_min, double t_max, Triangle const tri, Intersection* hit);
 };

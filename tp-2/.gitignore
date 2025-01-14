@@ -2,7 +2,9 @@ build
 src/pcg32
 src/linalg
 src/bitmap_image
-zig-out
 .zig-cache
-zig
+zig-out
 lib
+zig
+data/output
+!data/assets/mesh/*.obj

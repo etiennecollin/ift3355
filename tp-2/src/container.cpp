@@ -1,37 +1,68 @@
 #include "container.h"
 
-// @@@@@@ VOTRE CODE ICI
-// - Parcourir l'arbre DEPTH FIRST SEARCH selon les conditions suivantes:
-//      - S'il s'agit d'une feuille, faites l'intersection avec la géométrie.
-//      - Sinon, il s'agit d'un noeud altérieur.
-//          - Faites l'intersection du rayon avec le AABB gauche et droite.
-//              - S'il y a intersection, ajouter le noeud à ceux à visiter.
-// - Retourner l'intersection avec la profondeur maximale la plus PETITE.
-bool BVH::intersect(Ray ray, double t_min, double t_max, Intersection* hit) { return true; }
+// - Use DFS to search the tree
+//      - If it is a leaf, intersect with the geometry
+//      - Otherwise, it is an internal node
+//          - Intersect the ray with the left and right AABB
+//              - If there is an intersection, add the node to the stack
+// - Return the intersection with the smallest maximum depth
+bool BVH::intersect(Ray ray, double t_min, double t_max, Intersection* hit) {
+    bool did_hit = false;
+    if (root->aabb.intersect(ray, t_min, t_max)) {
+        // Create a stack of BVHNodes* and initialize it with the root of the BVH
+        std::vector<BVHNode*> stack;
+        stack.push_back(root);
 
-// @@@@@@ VOTRE CODE ICI
-// - Parcourir tous les objets
-//      - Détecter l'intersection avec l'AABB
-//      - Si intersection, détecter l'intersection avec la géométrie.
-//          - Si intersection, mettre à jour les paramètres.
-// - Retourner l'intersection avec la profondeur maximale la plus PETITE.
+        Intersection local_hit;
+        // Non-recursive DFS
+        while (!stack.empty()) {
+            BVHNode* currentNode = stack.back();
+            stack.pop_back();
+            if (currentNode->aabb.intersect(ray, t_min, t_max) && !currentNode->left && !currentNode->right) {
+                if (objects[currentNode->idx]->intersect(ray, t_min, t_max, &local_hit)) {
+                    if (local_hit.depth < hit->depth) {
+                        did_hit = true;
+                        *hit = local_hit;
+                        hit->obj_id = currentNode->idx;
+                    }
+                }
+            } else if (currentNode->aabb.intersect(ray, t_min, t_max)) {
+                if (currentNode->left) {
+                    stack.push_back(currentNode->left);
+                }
+                if (currentNode->right) {
+                    stack.push_back(currentNode->right);
+                }
+            }
+        }
+    }
+
+    return did_hit;
+}
+
+// - Iterate over all of the objects
+//      - Detect intersection with the AABB
+//      - If intersection, detect intersection with the geometry
+//          - If intersection, update the parameters
+// - Return the intersection with the smallest maximum depth
 bool Naive::intersect(Ray ray, double t_min, double t_max, Intersection* hit) {
     // Iterate through the objects
+    std::vector aabbs = Naive::aabbs;
     std::vector objects = Naive::objects;
     bool did_hit = false;
 
     for (int i = 0; i < objects.size(); i++) {
-        AABB aabb = Naive::aabbs[i];
         Intersection local_hit;
         // Detect intersection with AABB
-        if (aabb.intersect(ray, t_min, t_max)) {
+        if (aabbs[i].intersect(ray, t_min, t_max)) {
             // Detect intersection with geometry
             if (objects[i]->intersect(ray, t_min, t_max, &local_hit)) {
                 // Only update hit if it is the first hit or if it is closer
-                // than the previous hit
+                // than the previous closest hit
                 if (i == 0 || local_hit.depth < hit->depth) {
                     did_hit = true;
-                    hit = &local_hit;
+                    *hit = local_hit;
+                    hit->obj_id = i;
                 }
             }
         }
