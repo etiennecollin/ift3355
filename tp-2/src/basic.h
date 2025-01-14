@@ -6,7 +6,8 @@ using namespace linalg::aliases;
 // Added for multi-threading
 #include <future>
 
-#define PI 3.14159265358979323846
+#define PI M_PI
+#define ONE_OVER_PI M_1_PI
 #define EPSILON 1e-6
 #define WORLD_IOR 1.0
 
