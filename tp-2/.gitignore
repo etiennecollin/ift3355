@@ -1,7 +1,4 @@
 build
-src/pcg32
-src/linalg
-src/bitmap_image
 .zig-cache
 zig-out
 lib
