@@ -59,7 +59,7 @@ bool Sphere::local_intersect(Ray ray, double t_min, double t_max, Intersection *
 
     // Compute UV coordinates
     // Precompute the inverse of pi
-    double pi_inverse = 1 / M_PI;
+    double pi_inverse = ONE_OVER_PI;
     hit->uv = double2{0.5 + atan2(-normal.x, -normal.z) * pi_inverse / 2, 0.5 - asin(normal.y) * pi_inverse};
 
     return true;
@@ -208,7 +208,7 @@ bool Cylinder::local_intersect(Ray ray, double t_min, double t_max, Intersection
 
     // Compute UV coordinates
     // Precompute the inverse of pi
-    double pi_inverse = 1 / M_PI;
+    double pi_inverse = ONE_OVER_PI;
     hit->uv = double2{this->radius + atan2(normal.x, normal.z) * pi_inverse / 2,
                       (-intersection.y + this->half_height) / (2 * this->half_height)};
 

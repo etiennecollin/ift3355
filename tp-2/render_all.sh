@@ -22,8 +22,8 @@ fi
 
 # Render in parallel
 if $LOGGING; then
-    time fd -e ray -d 1 "." ./data/scene -x sh -c "./build/RAY '{/}' > './logs/{/.}.txt'"
+    time fd -e ray -d 1 "." ./data/scene -x sh -c "./zig-out/bin/RAY '{/}' > './logs/{/.}.txt'"
 else
 
-    time fd -e ray -d 1 "." ./data/scene -x ./build/RAY "{/}"
+    time fd -e ray -d 1 "." ./data/scene -x ./zig-out/bin/RAY "{/}"
 fi

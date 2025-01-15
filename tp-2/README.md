@@ -5,15 +5,37 @@ Vos noms et matricules:
 - Etienne Collin | 20237904
 - Louis Malenfant-Poulin | 20120851
 
-## Important
+## Dépendances
 
-Pour une quelconque raison, les optimisations de `-O2` et plus du compilateur empêchent le code de fonctionner correctement (`-O1` est le plus haut _preset_ d'optimisation qui est fonctionnel).
+<!-- Pour une quelconque raison, les optimisations de `-O2` et plus du compilateur empêchent le code de fonctionner correctement (`-O1` est le plus haut _preset_ d'optimisation qui est fonctionnel). -->
 
-Normalement, pour compiler le code, simplement exécuter `./build.sh -r`. Le _flag_ `-r` est pour compiler en mode _release_ fonctionnel, et l'absence du `-r` est pour compiler en mode _debug_. **ATTENTION**, certaines scènes personnalisées ont été créés et sont très longues à générer (des images 4K avec beaucoup de _samples_ et un _max ray depth_ élevé).
+- `zig >= 0.14.0`
 
-Pour _render_ les scènes, il est possible de soit exécuter directement l'exécutable généré `./build/RAY <scene.ray>`, soit d'exécuter `./render_all.sh` qui fera le render de toutes les scènes en parallèle. Ce dernier script a un temps d'exécution d'environ 1 minute. Puisque les scènes sont _rendered_ en parallèle, utilisez le _flag_ `-l` afin de générer un (1) fichier de logs par scène qui contient tous les messages écrits dans le `stdout` par l'exécutable. Ces logs seront placés dans `./logs/`
+> Dans les versions inférieures, la version incluse de Apple Clang a un problème avec macOS.
 
-## Notes
+## Compilation
+
+Pour compiler, exécuter:
+
+```bash
+zig build -Doptimize=ReleaseFast
+```
+
+## Utilisation
+
+Premièrement, s'assurer d'exécuter le script `./symlinks.sh` qui créera un symlink donnant accès au _directory_ `./data/` à l'exécutable.
+Pour _render_ les scènes voici les options fournies:
+
+- Exécuter directement l'exécutable généré `./zig-out/bin/ray <scene.ray>`.
+- Exécuter le script `./render_all.sh` qui fera le _render_ de toutes les scènes en parallèle.
+  - Ce script a un temps d'exécution d'environ 1 minute.
+  - Puisque les scènes sont _rendered_ en parallèle, utilisez le _flag_ `-l` afin de générer un (1) fichier de logs par scène qui contient tous les messages écrits dans le `stdout` par l'exécutable. Ces logs seront placés dans `./logs/`.
+
+**ATTENTION**, certaines scènes personnalisées ont été créés et sont très longues à générer (des images 4K avec beaucoup de _samples_ et un _max ray depth_ élevé).
+
+## Notes pour l'évaluation
+
+### Améliorations
 
 Certaines fonctionnalités ont été ajoutées en plus de celles demandées.
 
@@ -29,7 +51,7 @@ Certaines fonctionnalités ont été ajoutées en plus de celles demandées.
   - `./src/raytracer.cpp`: Ajout de parallélisme à la génération des colonnes de pixels dans `Raytracer::render`.
   - `./src/container.h`: Traitement parallèle des objets dans les constructeurs des classes `BVH` et `AABB`.
 
-## Erreurs dans les références
+### Erreurs dans les références
 
 Deux sphères ont été ajoutées à la position des lumières dans `all_at_once.ray`.
 
